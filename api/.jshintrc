@@ -1,0 +1,5 @@
+{
+    "esversion": 13,         // Enable ES6 syntax
+    "node": true       // Enable Node.js global variables
+  }
+  

@@ -1,0 +1,32 @@
+{
+  "name": "nothunapi",
+  "version": "1.0.0",
+  "description": "E-commerce website",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js",
+    "build": "webpack"
+  },
+  "author": "kingStar",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cloudinary": "^2.2.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "multer": "^1.4.5-lts.1",
+    "node": "^18.20.3",
+    "nodemailer": "^6.9.13",
+    "nodemon": "^3.1.4",
+    "paypal-rest-sdk": "^1.8.1",
+    "uuid": "^10.0.0"
+  }
+}

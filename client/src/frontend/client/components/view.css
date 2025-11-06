@@ -1,0 +1,858 @@
+.View{
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+}
+.viewInnerMain{
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+}
+.cashFlowHeading{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 10px 0px;
+}
+.cashFlowHeading>a{
+  font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    color: #00cbc0;
+    cursor: pointer;
+    border: 1px solid #00857e;
+    padding: 2px;
+    border-radius: 5px;
+    width: 120px;
+    text-align: center;
+}
+
+.biusinness__cashflowheading{
+  color: #00cbc0;
+  font-size: 16px;
+}
+.cashFlowstactureview{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    padding: 20px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+    /* margin: 20px; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+.viewButtion__flow{
+    width: 190px;
+    padding: 6px;
+    border-radius: 5px;
+    background: transparent;
+    color: #2fc500;
+    border: 1px solid #ccc;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.viwe_cashflowUl{
+  list-style-type: none;
+    width: 100%;
+    height: auto;
+    padding: 20px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+}
+.viewCahflowli{
+  width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ccc3;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #bb8600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-flow: wrap;
+}
+.viewCahflowli>span{
+    width: auto;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+.viewCahflowli>span>p{
+    font-size: 13px;
+    color: #f9b300;
+    margin-bottom: 5px;
+}
+.viewCahflowli>span>b{
+    font-size: 14px;
+    color: #cccc;
+}
+
+.viewCahflowli>span>img{
+  width: 50px;
+}
+.cashFlowinnerheading{
+  margin-bottom: 20px;
+    color: #bb8600;
+    font-size: 25px;
+}
+.yearlyProductview{
+  width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #ccc3;
+    padding: 10px;
+    border-radius: 5px;
+    color: #bb8600;
+    margin-bottom: 20px;
+}
+.yearlyProductview>img{
+  width: 100px;
+}
+.allGoalList{
+    width: 100%;
+    height: 265px;
+    box-sizing: border-box;
+    position: relative;
+    overflow-y: scroll;
+}
+.allGoalList::-webkit-scrollbar{
+  display: none;
+}
+.allGoalListInner{
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: none;
+  border-right: none;
+  transition: all 0.2s;
+}
+.allGoalInnerContainer{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    padding-bottom: 10px;
+}
+.allGoalInnerContainer>h1{
+  position: absolute;
+    top: 91px;
+    left: 561px;
+    font-size: 22px;
+    color: #00fff2;
+}
+.allGoalListInner>a{
+  display: contents;
+}
+.allGoalListHeader_dateStart{
+    position: absolute;
+    left: 34px;
+}
+.allGoalListHeader_dateEnd{
+    position: absolute;
+    left: 170px;
+}
+.allGoalListHeader_dateDiffirent{
+    position: absolute;
+    left: 301px;
+}
+.allGoalListHeader_dateProgress{
+    position: absolute;
+    left: 200px;
+}
+.allGoalListHeader_dateAmount{
+    position: absolute;
+    left: 355px;
+}
+.allGoalListHeader_dateName{
+    position: absolute;
+    left: 10px;
+}
+.allGoalListHeader_dateView{
+    position: absolute;
+    left: 506px;
+}
+.allGoalListHeader_dateEdit{
+    position: absolute;
+    left: 568px;
+}
+.allGoalListHeader_dateDelete{
+    position: absolute;
+    right: 10px;
+}
+
+.allGoal_allinOneStyle{
+  position: absolute;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+}
+.allGoalListInner_dateStart{
+    left: 10px;
+    width: 130px;
+    color: #ffb700;
+}
+.allGoalListInner_dateEnd{
+    left: 142px;
+    width: 130px;
+    color: #00fff2;
+}
+.allGoalListInner_dateDiffirent{
+    left: 299px;
+    width: 100px;
+    color: rgb(0 144 255);
+}
+.allGoalListInner_dateProgress{
+  position: absolute;
+    left: 170px;
+}
+.allGoalListInner_dateAmount{
+    left: 355px;
+    color: #7bff03;
+}
+.allGoalListInner_dateName{
+    left: 10px;
+    color: #ff00a5;
+}
+.allGoalListInner_dateView{
+  left: 500px;
+}
+.allGoalListInner_dateView>a{
+  text-decoration: none;
+  border: 1px solid #ccc9;
+  border-radius: 2px;
+  padding: 1px 10px;
+  font-size: 11px;
+  color: #ffb100;
+  transition: all 0.6s;
+}
+.allGoalListInner_dateView>a:hover{
+  border-color: #eee;
+  color: #ffd900;
+}
+.allGoalListInner_dateEdit{
+  right: 10px;
+  font-size: 20px !important;
+  cursor: pointer;
+  color: #ccff00;
+  border-radius: 50%;
+  padding: 3px;
+  transition:all 0.7s !important;
+  border-color: #999;
+}
+.allGoalListInner_dateEdit:hover{
+  border: 1px solid #999;
+}
+
+.allGoalListInner_dateDelete{
+  right: 23px;
+  font-size: 24px !important;
+  color: #ff0052;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 3px;
+  transition: all 0.8s !important;
+  border-color: #999;
+}
+
+.allGoalListInner_dateDelete:hover{
+  border: 1px solid #999;
+}
+.allGoalListTopSection{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0px;
+    left: 0px;
+    background: #011626;
+    z-index: 1;
+}
+.allGoalListTopSection>h2{
+  text-align: center;
+  margin-bottom: 10px;
+  color: #ccc;
+  margin-top: 10px;
+}
+
+.allGoalListHeader{
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #ccc3;
+  padding: 15px;
+  border-left: none;
+  border-right: none;
+  font-size: 13px;
+  font-weight: bold;
+  color: #bb8600;
+}
+
+/* date selection section<> */
+  .cashFlowDateSelectionMain{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    margin-bottom: 30px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+    }
+    .viewGoalAddSetpPopup{
+      width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    background: #011626;
+    position: fixed;
+    z-index: 10;
+    padding: 20px;
+    box-sizing: border-box;
+    display: none;
+    }
+    .viewGaolAddStepInner{
+      width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid #ccc3;
+    padding: 20px;
+    border-radius: 10px;
+    }
+    .addstepPopuClose{
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      cursor: pointer;
+      font-size: 22px !important;
+      color: #f00;
+      border-color: rgb(190 16 128);
+      border-radius: 50%;
+      transition: all 0.8s !important;
+      }
+      .addstepPopuClose:hover{
+        border: 1px solid rgb(190 16 128);
+      }
+
+    .ChangGoalTopPart{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 20px 10px 0px;
+    }
+    .ChangGoalTopPart>h2{
+      font-size: 16px;
+      color: #e10d48;
+    }
+    .ChangGoalTopPart>button{
+      background: transparent;
+      border: 1px solid #ccc3;
+      border-radius: 5px;
+      padding: 5px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #0cf3e7;
+    }
+  .cashFlowDateChange{
+    padding: 20px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+    margin: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    }
+  .cashFlow__dateOne{
+    width: 170px;
+    text-align: left;
+    }
+  .cashFlow__dateTwo{
+    width: 400px;
+    text-align: left;
+  }
+  .cashFlow__dateThree{
+    width: 210px;
+    text-align: right;
+}
+
+  .cashFlow__dateOne>h4,
+  .cashFlow__dateTwo>h4,
+  .cashFlow__dateThree>h4{
+    color: #ffd400;
+    font-size: 13px;
+    margin-bottom: 15px;
+  }
+  .cashFlowDateSection{
+    background: transparent;
+    color: #00fff2;
+    width: 135px;
+    text-align: left;
+    font-weight: bold;
+    padding-left: 10px;
+    height: 30px;
+    border-radius: 5px;
+    cursor: pointer;
+    appearance: none; /* Hides the default arrow in most browsers */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+  .cashFlowDateSection:focus {
+    outline: none;
+    border-color: #bb8600;
+}
+  .cashFlowDateSection>option{
+    padding: 10px;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: #011626;
+    color: #00fff2;
+    }
+  .cashFlowDateSection>option:hover {
+    background-color: #e9ecef;
+}
+  .cashFlowProgressbar{
+    width: 400px;
+    height: 10px;
+    background: #ccc6;
+    border-radius: 5px;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .cashFlowProgressbarInner{
+    width: 60%;
+    height: 100%;
+    background: #16d53e;
+    border-radius: 5px;
+  }
+  .cashFlowTargetCount{
+    color: rgb(0 145 255);
+  }
+  .targetFinterOptions{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .targetFinterOptions>svg{
+    margin-left: -26px;
+    font-size: 17px;
+    margin-top: 2px;
+    color: #ffffff;
+    cursor: pointer;
+    z-index: -1;
+  }
+/* date selection section</> */
+
+/* set TArget style<> */
+  .setTargetMain{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    padding: 30px;
+    }
+  .setTargetInner{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid #ccc3;
+    padding: 30px;
+    border-radius: 10px;
+  }
+  .backToPrevious{
+    position: absolute;
+
+  }
+  .backToPrevious>svg{
+    color: #fc0;
+    font-size: 30px !important;
+  }
+
+  .setTargetInner>h1{
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 25px;
+    color: #00c3b9;
+  }
+  .currentTarget{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    padding: 15px;
+    border: 1px solid #ccc3;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  .currentTarget_readable{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+  .currentTarget_readable>h2{
+    font-size: 20px;
+    color: #bb8600;
+  }
+  .currentTargetDateContainer{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+  .targetDateContainer{
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(0, 120, 212);
+  }
+  .targetCounterContainer{
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(0, 120, 212);
+  }
+  .setCurrentTarget{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid #ccc3;
+    padding: 30px;
+    border-radius: 10px;
+      }
+    .setCurrentTargetInner{
+      width: 100%;
+      height: auto;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-flow: wrap;
+    }
+    .setTargetButton{
+      width: 100%;
+      height: auto;
+      box-sizing: border-box;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .setTargetButton>button{
+      background: transparent;
+    border: 1px solid #bb8600;
+    border-radius: 5px;
+    padding: 10px;
+    width: 200px;
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #12d5cb;
+    transition: 1s all;
+    }
+    .setTargetButton>button:hover{
+      color: #00fff2;
+      border-color: #ffb908;
+    }
+    .setTargetButton>button:disabled{
+      user-select: none;
+      cursor: not-allowed;
+      border: 1px solid #936b084a;
+      color: #185e5b;
+      }
+  
+  .setTargetDateInput,
+  .setTargetAmountInput{
+    border: 1px solid #ccc3;
+    padding: 15px;
+    border-radius: 5px;
+    width: 400px;
+    margin-bottom: 30px;
+  }
+  .setTargetDateInput>h2,
+  .setTargetAmountInput>h2,
+  .setTargetAmountPopup>h2{
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: rgb(0, 120, 212);
+  }
+  .setTargetAmountPopup{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    position: relative;
+  }
+  .setTargetAmountPopup>span{
+    font-size: 10px;
+    position: absolute;
+    top: 27px;
+    left: 12px;
+    color: #ccc;
+  }
+  .setTargetDateInput>input,
+  .setTargetAmountInput>input{
+    width: 100%;
+    height: 30px;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #ccc3;
+    border-radius: 5px;
+    color: #e1e1e1;
+  }
+  .setTargetDateInput>input:focus-visible,
+  .setTargetAmountInput>input:focus-visible{
+    outline: none;
+    border: 1px solid #ccc9;
+  }
+
+/* set TArget style</> */
+
+/* view goal<> */
+.viewGoalMain{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    padding: 25px;
+}
+.viewGoalsInner{
+    width: 100%;
+    height: 434px;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+    padding: 20px;
+    overflow: scroll;
+}
+.viewGolasInnerTask,
+.viewGolasInnerTaskResult{
+  width: fit-content;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+  padding: 10px;
+}
+.viewGolasInnerTaskResult{
+    position: sticky;
+    bottom: 0px;
+    background: #011626;
+    z-index: 1;
+}
+
+.viewGolasInnerTask>svg{
+  position: absolute;
+    right: 14px;
+    top: 16px;
+    cursor: pointer;
+    font-size: 17px;
+    color: #ff002f;
+    opacity: 0;
+    transition: all 0.8s;
+    z-index: 5;
+}
+.viewGolasInnerTask:hover>svg{
+  opacity: 1;
+}
+.viewGoalsTaskContainer{
+    width: fit-content;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border: 1px solid #ccc3;
+    padding: 10px 10px 15px;
+    border-radius: 10px;
+}
+
+.viewGoalsInner::-webkit-scrollbar{
+  height: 8px;
+  width: 8px;
+}
+.viewGoalsInner::-webkit-scrollbar-corner{
+  background: transparent;
+}
+.viewGoalsInner::-webkit-scrollbar-thumb{
+  background-color: #ccc7;
+  border-radius: 5px;
+  -webkit-transition: 0.6s;
+  transition: 0.6s;
+}
+.viewGoalsInner::-webkit-scrollbar-track{
+  background: #ccc3;
+    border-radius: 5px;
+}
+
+.taskGoalInner,.taskGoalInnerResult{
+  margin: 0px 5px;
+  position: relative;
+}
+.taskGoalInner>label{
+  font-size: 10px;
+    color: #00ffd0;
+}
+.taskGoalInnerResult>label{
+  font-size: 10px;
+  color: rgb(93 185 255);
+}
+.taskGoalInner>input,
+.taskGoalInnerResult>input{
+  background: transparent;
+  border: 1px solid #ccc3;
+  padding: 5px;
+  border-radius: 5px;
+  color: rgb(255 0 141);
+  font-size: 16px;
+  font-weight: bold;
+  width: 200px;
+  -moz-appearance: textfield; /* Firefox */
+}
+.taskGoalInnerResult>input{
+  color: #fc0;
+}
+.taskGoalInner>input::-webkit-inner-spin-button,
+.taskGoalInner>input::-webkit-outer-spin-button,
+.taskGoalInnerResult>input::-webkit-inner-spin-button,
+.taskGoalInnerResult>input::-webkit-outer-spin-button{
+  -webkit-appearance: none; /* Chrome, Safari */
+  margin: 0; /* Remove margins */
+}
+
+.taskGoalInner>input:focus-within,
+.taskGoalInnerResult>input:focus-within{
+  outline: none;
+  border: 1px solid #cccccc;
+}
+.taskGoalInner>input[readonly]:focus,
+.taskGoalInnerResult>input[readonly]:focus{
+  border: 1px solid #ccc3;
+}
+.taskGoalInner>input[readonly]:hover,
+.taskGoalInnerResult>input[readonly]:hover{
+  cursor: default;
+}
+.addLadderNoData{
+  width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #00fff2;
+}
+/* view goal</> */
+.addStepSpinner{
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  background-color: #cccccc2b;
+  z-index: 10;
+}
+.spinner,.spinnerAdding {
+  border: 4px solid rgb(32, 31, 30);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border-left-color: #ffffff;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  left: 717px;
+  top: 261px;
+  z-index: 120;
+}
+.spinnerAdding{
+  left: 668px;
+  top: 261px;
+  border: 4px solid #ffb700;
+  border-left-color: #011626;
+}
+@keyframes spin {
+  to {
+      transform: rotate(360deg);
+  }
+}
+.shwoCalculateErrorMsg{
+    position: fixed;
+    bottom: 4px;
+    right: 4px;
+    font-size: 12px;
+    transition: all 0.7s;
+    opacity: 0;
+}
+.targetLockUnlock{
+    position: absolute;
+    top: 24px;
+    right: 24px;
+}
+.lockUnlockInner{}
+.targetUnlock,.targetLock{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    color: #00fff2;
+    font-size: 20px !important;
+    cursor: pointer;
+}
+.targetLock{
+    color: rgb(0, 120, 212);
+} 
+.lockunlocktitle{
+  font-size: 13px;
+  color: #fc0;
+  position: absolute;
+  width: 133px;
+  text-align: center;
+  left: -83px;
+  top: -33px;
+  z-index: 1;
+  opacity: 0;
+  transition: all 0.6s;
+}
+
+.targetLock:hover ~ .lockunlocktitle,
+.targetUnlock:hover ~ .lockunlocktitle{
+  opacity: 1;
+}
