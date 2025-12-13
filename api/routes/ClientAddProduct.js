@@ -2,87 +2,112 @@ import express from 'express';
 const router = express.Router();
 import { uploadImage } from '../cloudinary.js';
 import multerProcess from '../multerMiddleware.js';
-import Companies from "../models/Companies.js";
+import ClientProduct from "../models/ClientProduct.js";
 import{decryptUserData} from '../verifyuser.js';
 import { deleteResorce } from '../cloudinaryDelete.js';
 
-router.put("/addNewProduct", async(req,res) => {
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
+router.post("/addNewProduct", async (req, res) => {
+  const { userId } = req.cookies;
+  const companyId = decryptUserData(userId);
+
   multerProcess(req, res, async (err) => {
-      if (err) {
-          return res.json({message:err.message});
+    if (err) {
+      return res.status(400).json({ message: err.message });
     }
-    try{
-const fname = "ProductImage";
-const files = req.file;
-const Empye_Data = req.body;
-const requiredFields = ['ProductName', 'ProductPrice', 'InStockQuentity'];
-for (const field of requiredFields) {
-  const value = Empye_Data[field];
-  if (!value || value === '' ) {
-    return res.status(400).json({ message: `Field "${field}" must not be empty` });
-  }
-}
-  const imageStream = req.file.buffer;
-  const fileType = files.mimetype; // MIME type of the file
-  const imageName = new Date().getTime().toString();
-  const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
-  const ProductData = {...Empye_Data,productImgFile:uploadResult.secure_url,CloudinaryPublicId:uploadResult.public_id};
 
-if(userId !== undefined){
-  const updatedData = await Companies.findByIdAndUpdate(
-  DecId,
-  { $push: { CurrentProduct: ProductData } },
-  { new: true, projection: { CurrentProduct: { $slice: -1 } } }
-  );
-  const newProduct = updatedData.CurrentProduct[0];
-    return res.status(200).json({message:"New Product Added!",data:newProduct});
-}
-  return res.status(400).json({message:"Login/Register please!"});
-    }catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Something went wrong"});
+    try {
+      if (!userId || !companyId) {
+        return res.status(400).json({ message: "Login/Register please!" });
+      }
+
+      const fname = "ProductImage";
+      const files = req.file;
+      const productData = req.body;
+
+      // ✅ Validate required fields
+      const requiredFields = ["ProductName", "ProductPrice", "InStockQuentity"];
+      for (const field of requiredFields) {
+        const value = productData[field];
+        if (!value || value.trim() === "") {
+          return res.status(400).json({ message: `Field "${field}" must not be empty` });
+        }
+      }
+
+      // ✅ Handle image upload
+      const imageStream = files.buffer;
+      const fileType = files.mimetype;
+      const imageName = `${Date.now()}`;
+      const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
+
+      // ✅ Create product document
+      const newProduct = await ClientProduct.create({
+        ...productData,
+        companyId,
+        productImgFile: uploadResult.secure_url,
+        CloudinaryPublicId: uploadResult.public_id,
+      });
+
+      return res.status(200).json({
+        message: "New product added successfully!",
+        data: newProduct,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Something went wrong" });
     }
-  })
+  });
 });
 
-router.get("/getallProducts", async(req,res) => {
-  try{
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
-  if(userId !== undefined){
-  const updatedData = await Companies.findById(DecId).select("CurrentProduct");
-    if(!updatedData){
-              return res.status(404).json({message:"data not found!"});
-    };
-    return res.status(200).json({data:updatedData.CurrentProduct});
-  }
-  return res.status(400).json({message:"Login/Register please!"});
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({message:"Something went wrong!"});
+router.get("/getallProducts", async (req, res) => {
+  try {
+    const { userId } = req.cookies;
+    const companyId = decryptUserData(userId);
+
+    if (!userId || !companyId) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+
+    // 🔍 Find all products for this company
+    const products = await ClientProduct.find({ companyId }).sort({ createdAt: -1 });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ message: "No products found!" });
+    }
+
+    return res.status(200).json({
+      message: "Products fetched successfully!",
+      data: products,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong!" });
   }
 });
 
-router.get("/getSingleProduct/:ProductId", async(req,res) => {
-  try{
-    const {ProductId} = req.params;
-    const {userId} = req.cookies;
-    const DecId = decryptUserData(userId);
-    const company = await Companies.findOne(
-      { _id: DecId, "CurrentProduct._id": ProductId },
-      { "CurrentProduct.$": 1 }
-    );
+router.get("/getSingleProduct/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { userId } = req.cookies;
+    const companyId = decryptUserData(userId);
 
-    if (!company || !company.CurrentProduct.length) {
-      return res.status(404).json({ message: "Employee not found" });
+    if (!userId || !companyId) {
+      return res.status(400).json({ message: "Login/Register please!" });
     }
 
-    res.status(200).json({ product: company.CurrentProduct[0] });
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({message:"Something went wrong!"});
+    // 🔍 Find the product that matches both productId and companyId
+    const product = await ClientProduct.findOne({ _id: productId, companyId });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found!" });
+    }
+
+    return res.status(200).json({
+      message: "Product fetched successfully!",
+      data: product,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong!" });
   }
 });
 
@@ -92,157 +117,163 @@ router.put("/updateProduct/:productId", async (req, res) => {
   const { userId } = req.cookies;
   if (!userId) return res.status(401).json({ message: "Login/Register please!" });
 
-  const DecId = decryptUserData(userId);
-  const productId = req.params.productId;
+  const companyId = decryptUserData(userId);
+  const { productId } = req.params;
 
   multerProcess(req, res, async (err) => {
     if (err) return res.status(400).json({ message: err.message });
 
     try {
-      // 1) Build a filtered update object from req.body (remove '', null, undefined)
-      const rawData = req.body || {};
+      // STEP 1 — Filter non-empty fields from body
       const filtered = {};
-      for (const key of Object.keys(rawData)) {
-        const val = rawData[key];
-        // treat string-only empties and explicit null/undefined as "remove"
-        if (val !== "" && val !== null && val !== undefined) {
-          filtered[key] = val;
-        }
+      for (const [key, val] of Object.entries(req.body || {})) {
+        if (val !== "" && val !== null && val !== undefined) filtered[key] = val;
       }
 
-      // 2) If an image file was uploaded, upload to Cloudinary and attach fields
+      // STEP 2 — Handle new image upload (if provided)
       if (req.file && req.file.buffer) {
-        const fname = "ProductImage";
-        const imageStream = req.file.buffer;
-        const fileType = req.file.mimetype;
-        const imageName = Date.now().toString();
-
-        // uploadImage should return { secure_url, public_id } like in add route
-        const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
-        if (!uploadResult || !uploadResult.secure_url) {
+        const uploadResult = await uploadImage(
+          req.file.buffer,
+          Date.now().toString(),
+          "ProductImage",
+          req.file.mimetype
+        );
+        if (!uploadResult?.secure_url) {
           return res.status(500).json({ message: "Image upload failed" });
         }
         filtered.productImgFile = uploadResult.secure_url;
         filtered.CloudinaryPublicId = uploadResult.public_id;
       }
 
-      // 3) Find company and the specific product inside CurrentProduct
-      const company = await Companies.findById(DecId);
-      if (!company) return res.status(404).json({ message: "Company not found" });
+      // STEP 3 — Find existing product by ID and company ownership
+      const existingProduct = await ClientProduct.findOne({
+        _id: productId,
+        companyId,
+      });
 
-      const productIndex = company.CurrentProduct.findIndex(p => String(p._id) === String(productId));
-      if (productIndex === -1) return res.status(404).json({ message: "Product not found" });
+      if (!existingProduct)
+        return res.status(404).json({ message: "Product not found or unauthorized" });
 
-      const existingProduct = company.CurrentProduct[productIndex].toObject ? company.CurrentProduct[productIndex].toObject() : company.CurrentProduct[productIndex];
-
-      // 4) If a new CloudinaryPublicId was uploaded and existing product had a public id, delete the old image
-      if (filtered.CloudinaryPublicId && existingProduct.CloudinaryPublicId) {
+      // STEP 4 — Delete old Cloudinary image (if replaced)
+      if (
+        filtered.CloudinaryPublicId &&
+        existingProduct.CloudinaryPublicId
+      ) {
         try {
           await deleteResorce(existingProduct.CloudinaryPublicId, "image").catch(() => {});
         } catch (delErr) {
-          // log and continue — not fatal for the update
-          console.warn("Failed to delete old Cloudinary image:", delErr);
+          console.warn("Failed to delete old image:", delErr);
         }
       }
 
-      // 5) Merge existing product and filtered updates (replace only provided fields)
-      const updatedProduct = { ...existingProduct, ...filtered, updatedAt: Date.now() };
+      // STEP 5 — Update and save
+      Object.assign(existingProduct, filtered, { updatedAt: Date.now() });
+      await existingProduct.save();
 
-      // replace the product element and save the company doc
-      company.CurrentProduct[productIndex] = updatedProduct;
-      await company.save();
-
-      // return the updated product
-      return res.status(200).json({ message: "Product updated", data: company.CurrentProduct[productIndex] });
-    } catch (err) {
-      console.error("updateProduct error:", err);
+      return res.status(200).json({
+        message: "Product updated successfully",
+        data: existingProduct,
+      });
+    } catch (error) {
+      console.error("updateProduct error:", error);
       return res.status(500).json({ message: "Something went wrong" });
     }
   });
 });
 
+router.put("/changeProductImage/:productId", async (req, res) => {
+  const { userId } = req.cookies;
+  if (!userId) return res.status(401).json({ message: "Login/Register please!" });
 
-router.put("/ChangePorductImage/:ProductId", async(req,res) => {
-  const {ProductId} = req.params;
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
+  const companyId = decryptUserData(userId);
+  const { productId } = req.params;
+
   multerProcess(req, res, async (err) => {
-      if (err) {
-          return res.json({message:err.message});
-    }
-  try{
-  const fname = "ProductImage";
-  const files = req.file;
-  const oldPublicId = req.body.CloudinaryPublicId || null;
-  const imageStream = req.file.buffer;
-  const fileType = files.mimetype;
-  const imageName = new Date().getTime().toString();
-  const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
+    if (err) return res.status(400).json({ message: err.message });
 
-  const upd = await Companies.updateOne(
-        { _id: DecId, "CurrentProduct._id": EmployeeId },
-        {
-          $set: {
-            "CurrentProduct.$.productImgFile": uploadResult.secure_url,
-            "CurrentProduct.$.CloudinaryPublicId": uploadResult.public_id,
-          },
-        }
-      );
-
-      if (upd.matchedCount === 0) {
-        await deleteResorce(uploadResult.public_id, "image").catch(() => {});
-        return res.status(404).json({ message: "Employee not found" });
+    try {
+      // Ensure file exists
+      if (!req.file || !req.file.buffer) {
+        return res.status(400).json({ message: "No image file uploaded" });
       }
 
-      if (oldPublicId) await deleteResorce(oldPublicId, "image").catch(() => {});
-
-      const doc = await Companies.findOne(
-        { _id: DecId },
-        { _id: 0, CurrentProduct: { $elemMatch: { _id: ProductId } } }
+      // Upload new image
+      const uploadResult = await uploadImage(
+        req.file.buffer,
+        Date.now().toString(),
+        "ProductImage",
+        req.file.mimetype
       );
-      const updatedProduct = doc?.CurrentProduct?.[0] || null;
 
-      return res.status(200).json({ message: "Update successful!", data: updatedProduct });
+      if (!uploadResult?.secure_url) {
+        return res.status(500).json({ message: "Image upload failed" });
+      }
 
-}catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Something went wrong"});
+      // Find the product belonging to this company
+      const product = await ClientProduct.findOne({ _id: productId, companyId });
+      if (!product) {
+        // If product not found, delete the newly uploaded image to avoid orphaned files
+        await deleteResorce(uploadResult.public_id, "image").catch(() => {});
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      // Delete old image from Cloudinary (if exists)
+      if (product.CloudinaryPublicId) {
+        await deleteResorce(product.CloudinaryPublicId, "image").catch(() => {});
+      }
+
+      // Update product with new image details
+      product.productImgFile = uploadResult.secure_url;
+      product.CloudinaryPublicId = uploadResult.public_id;
+      product.updatedAt = Date.now();
+      await product.save();
+
+      return res.status(200).json({
+        message: "Product image updated successfully!",
+        data: product,
+      });
+    } catch (error) {
+      console.error("changeProductImage error:", error);
+      return res.status(500).json({ message: "Something went wrong" });
     }
-  })
+  });
 });
 
-router.delete("/deleteProduct/:ProductId", async (req, res) => {
+router.delete("/deleteProduct/:productId", async (req, res) => {
   try {
     const { userId } = req.cookies;
-    const DecId = decryptUserData(userId);
-  const {ProductId} = req.params;
     if (!userId) {
       return res.status(401).json({ message: "Login/Register please!" });
     }
 
-    // Validate product IDs
-    if (!ProductId) {
-      return res.status(400).json({ message: "No product IDs provided" });
+    const companyId = decryptUserData(userId);
+    const { productId } = req.params;
+
+    if (!productId) {
+      return res.status(400).json({ message: "Product ID is required" });
     }
 
-  const updatedCompany = await Companies.findByIdAndUpdate(
-      DecId,
-      { $pull: { CurrentProduct: { _id: ProductId } } },
-      { new: true }
-    );
-
-    if (!updatedCompany) {
-      return res.status(404).json({ message: "Company not found" });
+    // Find product belonging to this company
+    const product = await ClientProduct.findOne({ _id: productId, companyId });
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
     }
+
+    // Delete Cloudinary image (if any)
+    if (product.CloudinaryPublicId) {
+      await deleteResorce(product.CloudinaryPublicId, "image").catch(() => {});
+    }
+
+    // Delete product document from collection
+    await ClientProduct.deleteOne({ _id: productId, companyId });
 
     return res.status(200).json({
-      message: "Selected product(s) deleted successfully",
+      message: "Product deleted successfully!",
     });
   } catch (err) {
-    console.error(err);
+    console.error("deleteProduct error:", err);
     return res.status(500).json({ message: "Something went wrong" });
   }
 });
-
 
 export default router;

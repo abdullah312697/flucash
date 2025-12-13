@@ -2,240 +2,314 @@ import express from 'express';
 const router = express.Router();
 import { uploadImage } from '../cloudinary.js';
 import multerProcess from '../multerMiddleware.js';
-import Companies from "../models/Companies.js";
-import{decryptUserData} from '../verifyuser.js';
+import Employee from "../models/Employee.js";
+import{encryptUserData, decryptUserData, encryptCompanyPassword, decryptCompanyPassword} from '../verifyuser.js';
 import { deleteResorce } from '../cloudinaryDelete.js';
+import Companies from "../models/Companies.js";
 
-router.put("/addemplyee", async(req,res) => {
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
+router.post("/addemplyee", async (req, res) => {
+  const { companyId } = req.cookies;
+
+  // Step 1: Validate company login
+  if (!companyId) {
+    return res.status(400).json({ message: "Login/Register please!" });
+  }
+
+  const companyIdDecrypted = decryptUserData(companyId);
+  if (!companyIdDecrypted) {
+    return res.status(400).json({ message: "Invalid company session!" });
+  }
+
+  // Step 2: Handle multer upload
   multerProcess(req, res, async (err) => {
-      if (err) {
-          return res.json({message:err.message});
-    }
-    try{
-const fname = "EmplyeeProfile";
-const files = req.file;
-const Empye_Data = req.body;
+    if (err) return res.status(400).json({ message: err.message });
 
-const requiredFields = ['YemplyeeName', 'YemplyeePhone', 'YemplyeeEmail', 'YemplyeeLeaving', 'EmplyeeSellary','EmplyeeRoal','EmplyeeJoinDate'];
-for (const field of requiredFields) {
-  const value = Empye_Data[field];
-  if (!value || (typeof value === 'string' && value.trim() === '')) {
-    return res.status(400).json({ message: `Field "${field}" must not be empty` });
-  }
-}
-  const imageStream = req.file.buffer;
-  const fileType = files.mimetype; // MIME type of the file
-  const imageName = new Date().getTime().toString();
-  const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
-const EmplyeeData = {...Empye_Data,EmplyeeProfile:uploadResult.secure_url,CloudinaryPublicId:uploadResult.public_id};
+    try {
+      // Step 3: Validate required fields
+      const requiredFields = [
+        "YemplyeeName",
+        "YemplyeePhone",
+        "YemplyeeEmail",
+        "YemplyeeLeaving",
+        "EmplyeeSellary",
+        "EmplyeeRoal",
+        "EmplyeeJoinDate",
+      ];
 
-if(userId !== undefined){
-  const updatedData = await Companies.findByIdAndUpdate(
-  DecId,
-  { $push: { allEmployees: EmplyeeData } },
-  { new: true, projection: { allEmployees: { $slice: -1 } } }
-  );
-  const newEmployee = updatedData.allEmployees[0];
-    return res.status(200).json({message:"New Emplyeed Added!",data:newEmployee});
-}
-  return res.status(400).json({message:"Login/Register please!"});
-    }catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Something went wrong"});
-    }
-  })
-});
-
-router.get("/getallEmployee", async(req,res) => {
-  try{
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
-  if(userId !== undefined){
-  const updatedData = await Companies.findById(DecId).select("allEmployees");
-    if(!updatedData){
-              return res.status(404).json({message:"data not found!"});
-    };
-    return res.status(200).json({data:updatedData.allEmployees});
-  }
-  return res.status(400).json({message:"Login/Register please!"});
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({message:"Something went wrong!"});
-  }
-});
-
-router.get("/getSingleEmployee/:EmployeeId", async(req,res) => {
-  try{
-    const {EmployeeId} = req.params;
-    const {userId} = req.cookies;
-    const DecId = decryptUserData(userId);
-    const company = await Companies.findOne(
-      { _id: DecId, "allEmployees._id": EmployeeId },
-      { "allEmployees.$": 1 }
-    );
-
-    if (!company || !company.allEmployees.length) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-
-    res.status(200).json({ employee: company.allEmployees[0] });
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({message:"Something went wrong!"});
-  }
-});
-
-router.put("/updateEmployee/:EmployeeId", async(req,res) => {
-  try{
-      const {EmployeeId} = req.params;
-      const {userId} = req.cookies;
-      const DecId = decryptUserData(userId);
-      const filterObject = Object.fromEntries(
-        Object.entries(req.body).filter(([__, v]) => v !== "" && v !== null && v !== undefined)
-      )
-const upd = await Companies.updateOne(
-      { _id: DecId, "allEmployees._id": EmployeeId },
-      {
-        $set: Object.fromEntries(
-          Object.entries(filterObject).map(([k, v]) => [`allEmployees.$.${k}`, v])
-        ),
-      }
-    );
-    if (upd.matchedCount === 0) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-    const doc = await Companies.findOne(
-      { _id: DecId },
-      {
-        _id: 0,
-        allEmployees: { $elemMatch: { _id: EmployeeId } },
-      }
-    );
-
-    const updatedEmployee = doc?.allEmployees?.[0];
-    return res.status(200).json({ message: "Update successful!", data: updatedEmployee });
-
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({message:"Something went wrong!"});
-  }
-});
-
-
-router.put("/ChangeProfile/:EmployeeId", async(req,res) => {
-  const {EmployeeId} = req.params;
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
-  multerProcess(req, res, async (err) => {
-      if (err) {
-          return res.json({message:err.message});
-    }
-  try{
-  const fname = "EmplyeeProfile";
-  const files = req.file;
-  const oldPublicId = req.body.CloudinaryPublicId || null;
-  const imageStream = req.file.buffer;
-  const fileType = files.mimetype;
-  const imageName = new Date().getTime().toString();
-  const uploadResult = await uploadImage(imageStream, imageName, fname, fileType);
-
-  const upd = await Companies.updateOne(
-        { _id: DecId, "allEmployees._id": EmployeeId },
-        {
-          $set: {
-            "allEmployees.$.EmplyeeProfile": uploadResult.secure_url,
-            "allEmployees.$.CloudinaryPublicId": uploadResult.public_id,
-          },
+      for (const field of requiredFields) {
+        if (!req.body[field] || req.body[field].trim() === "") {
+          return res.status(400).json({ message: `Field "${field}" must not be empty` });
         }
+      }
+
+      // Step 4: Validate profile image
+      if (!req.file) {
+        return res.status(400).json({ message: "Profile picture must be included!" });
+      }
+
+      // Step 5: Check duplicate email
+      const exists = await Employee.findOne({ YemplyeeEmail: req.body.YemplyeeEmail });
+      if (exists) {
+        return res.status(409).json({ message: "Employee email already exists!" });
+      }
+
+      // Step 6: Upload image to cloud
+      const file = req.file;
+      const uploadResult = await uploadImage(
+        file.buffer,
+        Date.now().toString(),
+        "EmplyeeProfile",
+        file.mimetype
       );
 
-      if (upd.matchedCount === 0) {
+      // Step 7: Create new employee
+      const newEmployee = await Employee.create({
+        ...req.body,
+        companyId: companyIdDecrypted,
+        EmplyeeProfile: uploadResult.secure_url,
+        CloudinaryPublicId: uploadResult.public_id,
+      });
+
+      return res.status(200).json({
+        message: "New employee added!",
+        data: newEmployee,
+      });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  });
+});
+
+
+router.get("/getallEmployee", async (req, res) => {
+  try {
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // this should be the companyIdDecripted
+
+    if (!companyIdDecripted) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+
+    // Find all employees for this company
+    const employees = await Employee.find({ companyId: companyIdDecripted });
+
+    if (!employees || employees.length === 0) {
+      return res.status(404).json({ message: "No employees found!" });
+    }
+
+    return res.status(200).json({ data: employees });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong!" });
+  }
+});
+
+router.get("/getSingleEmployee/:EmployeeId", async (req, res) => {
+  try {
+    const { EmployeeId } = req.params;
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // Company ID
+
+    if (!companyIdDecripted) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+    const employee = await Employee.findOne({ _id: EmployeeId, companyId: companyIdDecripted });
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    res.status(200).json({ employee });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong!" });
+  }
+});
+
+router.put("/updateEmployee/:EmployeeId", async (req, res) => {
+  try {
+    const { EmployeeId } = req.params;
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // Company ID
+
+    if (!EmployeeId || !companyId) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+
+    // Filter out empty/null/undefined fields
+    const updateData = Object.fromEntries(
+      Object.entries(req.body).filter(([_, v]) => v !== "" && v !== null && v !== undefined)
+    );
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update!" });
+    }
+
+    // Update the employee document directly
+    const updatedEmployee = await Employee.findOneAndUpdate(
+      { _id: EmployeeId, companyId: companyIdDecripted }, // Ensure employee belongs to this company
+      { $set: updateData },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedEmployee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    
+    const company = await Companies.findById(companyIdDecripted).select("-companyPassword");
+    
+      const AccessData = {
+      companyName: company.companyName,
+      companyLogo: company.companyLogo,
+      employeeName: updatedEmployee.YemplyeeName,
+      employeeRoal: updatedEmployee.EmplyeeRoal,
+      employeeProfile: updatedEmployee.EmplyeeProfile,
+    };
+
+    return res.status(200).json({
+      message: "Update successful!",
+      data: updatedEmployee,
+      AccessData
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong!" });
+  }
+});
+
+
+router.put("/ChangeProfile/:EmployeeId", async (req, res) => {
+  const { EmployeeId } = req.params;
+  const { companyId } = req.cookies;
+  const companyIdDecripted = decryptUserData(companyId); // Company ID
+
+  if (!companyIdDecripted) {
+    return res.status(400).json({ message: "Login/Register please!" });
+  }
+
+  multerProcess(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message });
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const files = req.file;
+      const oldPublicId = req.body.CloudinaryPublicId || null;
+
+      // Upload new profile image
+      const imageName = new Date().getTime().toString();
+      const uploadResult = await uploadImage(files.buffer, imageName, "EmplyeeProfile", files.mimetype);
+
+      // Update Employee document
+      const updatedEmployee = await Employee.findOneAndUpdate(
+        { _id: EmployeeId, companyId: companyIdDecripted }, // Ensure employee belongs to this company
+        {
+          $set: {
+            EmplyeeProfile: uploadResult.secure_url,
+            CloudinaryPublicId: uploadResult.public_id,
+          },
+        },
+        { new: true } // Return updated document
+      );
+
+      if (!updatedEmployee) {
+        // Delete newly uploaded image if update failed
         await deleteResorce(uploadResult.public_id, "image").catch(() => {});
         return res.status(404).json({ message: "Employee not found" });
       }
 
+      // Delete old profile image from Cloudinary
       if (oldPublicId) await deleteResorce(oldPublicId, "image").catch(() => {});
+      const company = await Companies.findById(companyIdDecripted).select("-companyPassword");
+    
+        const AccessData = {
+        companyName: company.companyName,
+        companyLogo: company.companyLogo,
+        employeeName: updatedEmployee.YemplyeeName,
+        employeeRoal: updatedEmployee.EmplyeeRoal,
+        employeeProfile: updatedEmployee.EmplyeeProfile,
+      };
 
-      const doc = await Companies.findOne(
-        { _id: DecId },
-        { _id: 0, allEmployees: { $elemMatch: { _id: EmployeeId } } }
-      );
-      const updatedEmployee = doc?.allEmployees?.[0] || null;
-
-      return res.status(200).json({ message: "Update successful!", data: updatedEmployee });
-
-}catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Something went wrong"});
+      return res.status(200).json({
+        message: "Profile updated successfully!",
+        data: updatedEmployee,
+        AccessData
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Something went wrong!" });
     }
-  })
+  });
 });
 
-router.put("/updateEmployeePassword/:EmployeeId", async(req,res) => {
-  const {EmployeeId} = req.params;
-  const {userId} = req.cookies;
-  const DecId = decryptUserData(userId);
-  try{
-  const EmployeePass = req.body.employeeAccessPassword;
-  if(EmployeePass === "" || EmployeePass === null || EmployeePass === undefined){
-    return res.status(400).json({ message: "Must not be empty!" });
-  }
-  const upd = await Companies.updateOne(
-        { _id: DecId, "allEmployees._id": EmployeeId },
-        {
-          $set: {
-            "allEmployees.$.employeeAccessPassword":EmployeePass
-          },
-        }
-      );
+router.put("/updateEmployeePassword/:EmployeeId", async (req, res) => {
+  try {
+    const { EmployeeId } = req.params;
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // Company ID
 
-      if (upd.matchedCount === 0) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
-      const doc = await Companies.findOne(
-        { _id: DecId },
-        { _id: 0, allEmployees: { $elemMatch: { _id: EmployeeId } } }
-      );
-      const updatedEmployee = doc?.allEmployees?.[0] || null;
-
-      return res.status(200).json({ message: "Update successful!", data: updatedEmployee?.employeeAccessPassword });
-
-}catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Something went wrong"});
+    if (!companyIdDecripted) {
+      return res.status(400).json({ message: "Login/Register please!" });
     }
+    const EmployeePass = req.body.employeeAccessPassword;
+
+    if (!EmployeePass || EmployeePass.trim() === "") {
+      return res.status(400).json({ message: "Password must not be empty!" });
+    }
+
+    // Update employee password
+    const updatedEmployee = await Employee.findOneAndUpdate(
+      { _id: EmployeeId, companyId: companyIdDecripted }, // Ensure employee belongs to this company
+      { $set: {employeeAccessPassword: encryptCompanyPassword(EmployeePass) } },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedEmployee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    return res.status(200).json({
+      message: "Password updated successfully!",
+      data: decryptCompanyPassword(updatedEmployee.employeeAccessPassword),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Something went wrong!" });
+  }
 });
 
 router.put("/updateEmployeeStatus/:EmployeeId", async (req, res) => {
-  const { EmployeeId } = req.params;
-  const { userId } = req.cookies;
-  const DecId = decryptUserData(userId);
-
   try {
-    const EmployeeStatuss = req.body.EmployeeProfileStatus;
+    const { EmployeeId } = req.params;
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // Company ID
 
-    const upd = await Companies.updateOne(
-      { _id: DecId, "allEmployees._id": EmployeeId },
-      { $set: { "allEmployees.$.EmployeeProfileStatus": EmployeeStatuss } },
-       { runValidators: true }
+    if (!companyIdDecripted) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+
+    const EmployeeStatus = req.body.EmployeeProfileStatus;
+
+    if (!EmployeeStatus) {
+      return res.status(400).json({ message: "Employee status is required!" });
+    }
+
+    // Update employee status directly
+    const updatedEmployee = await Employee.findOneAndUpdate(
+      { _id: EmployeeId, companyId: companyIdDecripted }, // Ensure employee belongs to this company
+      { $set: { EmployeeProfileStatus: EmployeeStatus } },
+      { new: true, runValidators: true } // Return updated document & validate enum
     );
 
-    if (upd.matchedCount === 0) {
+    if (!updatedEmployee) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const doc = await Companies.findOne(
-      { _id: DecId },
-      { "allEmployees": { $elemMatch: { _id: EmployeeId } } }
-    );
-
-    const updatedEmployee = doc?.allEmployees?.[0];
-
     return res.status(200).json({
       message: "Update successful!",
-      data: updatedEmployee?.EmployeeProfileStatus,
+      data: updatedEmployee.EmployeeProfileStatus,
     });
   } catch (err) {
     console.error(err);
@@ -244,19 +318,22 @@ router.put("/updateEmployeeStatus/:EmployeeId", async (req, res) => {
 });
 
 router.delete("/deleteEmployee/:EmployeeId", async (req, res) => {
-  const { EmployeeId } = req.params;
-  const { userId } = req.cookies;
-  const DecId = decryptUserData(userId);
-
   try {
-    // Pull (remove) the matching employee from the array
-    const result = await Companies.updateOne(
-      { _id: DecId },
-      { $pull: { allEmployees: { _id: EmployeeId } } }
-    );
+    const { EmployeeId } = req.params;
+    const { companyId } = req.cookies;
+    const companyIdDecripted = decryptUserData(companyId); // Company ID
 
-    // If no employee was found or removed
-    if (result.modifiedCount === 0) {
+    if (!companyIdDecripted) {
+      return res.status(400).json({ message: "Login/Register please!" });
+    }
+
+    // Delete the employee directly
+    const deletedEmployee = await Employee.findOneAndDelete({
+      _id: EmployeeId,
+      companyId: companyIdDecripted, // Ensure employee belongs to this company
+    });
+
+    if (!deletedEmployee) {
       return res.status(404).json({ message: "Employee not found or already deleted" });
     }
 

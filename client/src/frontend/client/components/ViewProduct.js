@@ -22,7 +22,7 @@ function ViewProduct() {
           try{
             const product = await Altaxios.get(`/newproduct/getSingleProduct/${productId}`);
           if(product.status === 200){
-            setCurrentProducts(product.data.product)
+            setCurrentProducts(product.data.data)
           }
         }catch(error){
           if(error.response){

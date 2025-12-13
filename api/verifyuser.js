@@ -15,20 +15,40 @@ export function encryptUserData(data) {
 }
 
 export function decryptUserData(encryptedData) {
-    if(encryptedData === undefined){
-        return false;
+  if (!encryptedData || typeof encryptedData !== "string") {
+    console.error("decryptUserData error: invalid input:", encryptedData);
+    return null;
+  }
+
+  try {
+    // 🔥 Important
+    encryptedData = decodeURIComponent(encryptedData);
+
+    const parts = encryptedData.split(':');
+    if (parts.length !== 2) {
+      console.error("decryptUserData error: invalid encrypted format:", encryptedData);
+      return null;
     }
-    const [iv, encrypted] = encryptedData.split(':');
+
+    const [iv, encrypted] = parts;
+
     const key = Buffer.from(process.env.PASS_SEC, 'hex');
     const decipher = CryptoMain.createDecipheriv(
-        algorithm,
-        key,
-        Buffer.from(iv, 'hex')
+      algorithm,
+      key,
+      Buffer.from(iv, 'hex')
     );
+
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
+
     return decrypted;
-};
+  } catch (err) {
+    console.error("decryptUserData error:", err.message);
+    return null;
+  }
+}
+
 export function encryptCompanyPassword(plainTextPassword) {
     if(plainTextPassword === undefined){
         return false;

@@ -2,7 +2,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import profie from '../../../images/profile/male.png';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import ChatIcon from '@mui/icons-material/Chat';
 import CallIcon from '@mui/icons-material/Call';
 import { useEffect, useRef } from 'react';
 import {Altaxios} from '../../Altaxios';
@@ -11,6 +10,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloseIcon from '@mui/icons-material/Close';
+import LiveChats from './LiveChats';
+import { useAuth } from '../../../context/AuthContext';
 
 function Employee() {
     const { employeeId } = useParams();
@@ -23,6 +24,7 @@ function Employee() {
     const [isPorfielEnable,setIsProfileEnable] = useState(false);
     const [isOpend,setIsOpend] = useState(false);
     const [isUserScroll,setIsUserScroll] = useState(true);
+    const {updateEmployee, updateProfile} = useAuth();
       const [emplyeeAddDataNew,setEmployeeDataNew] = useState({
         YemplyeeName:"",
         YemplyeePhone:"",
@@ -58,7 +60,7 @@ function Employee() {
       return 3
     }
   };
-  const EmployeeStatus = ["Suspended", "Warned", "Blocked", "Cancel"];
+  const EmployeeStatus = ["Active", "Suspended", "Warned", "Blocked", "Cancel"];
   const ActiveStauts = EmployeeStatus[0];
   const activeIndex = useRef(0);
   useEffect(() => {
@@ -197,7 +199,8 @@ const uploadReviewPhotos = (e) => {
   const AddnewEmplyee = async() => {
     try{
     setIsFullData(true);
-    const adEmplyees = await Altaxios.put(`/newemplyee/updateEmployee/${encodeURIComponent(employeeId)}`,emplyeeAddDataNew);
+    const adEmplyees = await updateEmployee(employeeId, emplyeeAddDataNew);
+
       if(adEmplyees.status === 200){
         setResMessageinDelete(adEmplyees.data.message);
         const newEmployee = adEmplyees.data.data;
@@ -246,13 +249,7 @@ const uploadReviewPhotos = (e) => {
     const EmploeeData = new FormData();
     EmploeeData.append("file",emplyeeProfile);
     EmploeeData.append("CloudeId",employeeData?.CloudinaryPublicId);
-    const ChangeProfile = await Altaxios.put(`/newemplyee/ChangeProfile/${encodeURIComponent(employeeId)}`,EmploeeData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    const ChangeProfile = await updateProfile(employeeId, EmploeeData);
       if(ChangeProfile.status === 200){
         setResMessage(ChangeProfile.data.message);
         const newEmployee = ChangeProfile.data.data;
@@ -357,10 +354,10 @@ const uploadReviewPhotos = (e) => {
       
     }
   };
-
+let cName = localStorage.getItem("CompanyName");
   return (
     <div className='ProductPageMain'>
-        <Link to="/" className='arrowback_a'><ArrowBackIcon className='arrowbackIcon'/></Link>
+        <Link to={`/company/${cName}`} className='arrowback_a'><ArrowBackIcon className='arrowbackIcon'/></Link>
     {/* delete pre popup <>*/}
       <div className='preDeletebtnContainer' style={{display:`${!isOpend ? 'none' : 'block'}`,left:'455px'}}>
     <div className="preDeletePopup">
@@ -379,8 +376,8 @@ const uploadReviewPhotos = (e) => {
                 <div className='EmployeeProfieName'>
                   <div className='EmployeeImageContianer'>
                     <AddAPhotoIcon onClick={() => setIsProfileEnable(!isPorfielEnable)}/>
-                    <img src={employeeData?.EmplyeeProfile || profie} alt="employee profiel"/>
-                    <h2>{employeeData?.YemplyeeName || "Loading..."}</h2>
+                    <img src={employeeData?.EmplyeeProfile ?? profie} alt="employee profiel"/>
+                    <h2>{employeeData?.YemplyeeName ?? "Employee name"}</h2>
                   </div>
                     <div className='EmployeeProfileChange' style={{display:`${!isPorfielEnable ? 'none' : 'block' }`}}>
                       <CloseIcon onClick={() => {setIsProfileEnable(!isPorfielEnable); setPreviewNewImage(""); setProfileBtnEnable(true);}}/>
@@ -405,7 +402,8 @@ const uploadReviewPhotos = (e) => {
                 </div>
                 <div className='ConnectonType'>
                     <div className='connectionButton'><EmailOutlinedIcon style={{color:'#ffb100'}}/></div>
-                    <div className='connectionButton'><ChatIcon style={{color:'#00fff2de'}}/></div>
+                    <div className='connectionButton'><LiveChats/></div>
+                    {/* <ChatIcon style={{color:'#00fff2de'}}/> */}
                     <div className='connectionButton'><CallIcon style={{color:'#48ff00'}}/></div>
                 </div>
             </div>

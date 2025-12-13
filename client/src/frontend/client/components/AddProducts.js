@@ -32,7 +32,7 @@ function AddProduct() {
           try{
             const product = await Altaxios.get("/newproduct/getallProducts/");
           if(product.status === 200){
-            setCurrentProducts(product.data.data)
+            setCurrentProducts(product.data.data || [])
           }
         }catch(error){
           if(error.response){
@@ -89,15 +89,16 @@ function AddProduct() {
 }
 //preview photos  end
  
-  const AddProduct = async() => {
+  const AddProductDataNew = async() => {
     try{
+    setIsEnableBtn(true);
     const ProductData = new FormData();
     ProductData.append("ProductName",porductInfo.ProductName);
     ProductData.append("ProductPrice",porductInfo.ProductPrice);
     ProductData.append("InStockQuentity",porductInfo.InStockQuentity);
     ProductData.append("GoalIdentifire",checkedGoals);
     ProductData.append("file",productImgFile);
-    const addProduct = await Altaxios.put('/newproduct/addNewProduct',ProductData,
+    const addProduct = await Altaxios.post('/newproduct/addNewProduct',ProductData,
       {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -107,7 +108,6 @@ function AddProduct() {
       if(addProduct.status === 200){
         setResMessage(addProduct.data.message);
         setCurrentProducts([...currentProducs,addProduct.data.data]);
-        console.log(addProduct.data.data);
         setResMsgStyle({color:"green",opacity:1});
         setProductImgFile(null);
         setProductImg("");
@@ -132,6 +132,8 @@ function AddProduct() {
         setResMessage("Something went wrong!");
         console.log(error);
       }
+    }finally{
+      setIsEnableBtn(false);
     }
   };
 
@@ -203,7 +205,7 @@ const handleCheck = (id, checked) => {
                   }
                 </div>
               </div>
-              <button className="addClientProdutbtn" onClick={AddProduct} disabled={isEnableBtn}>Add Product</button>
+              <button className="addClientProdutbtn" onClick={AddProductDataNew} disabled={isEnableBtn}>Add Product</button>
               <div className='showErrorOrSuccess' style={resMsgStyle}>{resMessage}</div>
             </div>
         </div>
@@ -230,7 +232,7 @@ const handleCheck = (id, checked) => {
                   <Link className="client__productAction" to={`/viewproduct/${pro._id}`}>View</Link>
                 </div> 
                 ))
-                : (<div>You Don't have any product yet!</div>)
+                : (<div style={{textAlign:'center',paddingTop:'20px',color:'#ccc'}}>You Don't have any product yet!</div>)
               }
 
             </div>

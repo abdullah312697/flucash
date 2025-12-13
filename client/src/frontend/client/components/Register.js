@@ -1,9 +1,10 @@
-import { useEffect,useRef,useState } from 'react'
+import { useRef,useState } from 'react'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { Link } from 'react-router-dom';
-import {Altaxios} from '../../Altaxios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+
 // import { trackPageView, trackRegistration } from '../../../js/trackEvents';
 // import {handleFbclidCookie} from '../../../js/fbclidUtils';
 
@@ -14,6 +15,14 @@ function Register() {
     const [loading,setLoading] = useState(false);
     const navigate = useNavigate();
     const isCodeGenerated = useRef(false);
+    const [inVisible,setIsVisible] = useState(false)
+    const passwordOne = useRef(null);
+    const passwordTwo = useRef(null);
+      const inputFile = useRef(null);
+      const preview = useRef(null);
+      const [emplyeeProfile,setEmplyeeProfile] = useState(null);
+      const { register } = useAuth();
+
     // const fbc = handleFbclidCookie();
   // fbc click id</>
 
@@ -29,23 +38,6 @@ function Register() {
   //   }, [fbc]);
   //facebook pixle event</>
 
-  useEffect(() => {
-    const verifyUser = async () => {
-    try{
-      const verifyUser = await Altaxios.get('/users/vefiryUsersLog');
-      if(verifyUser.status === 200){
-        navigate("/")
-      }
-    }catch(error){
-      if(error.response){
-        console.log(error.response.data.message);
-      }else{
-        console.log(error);
-      }
-    }
-  }
-  verifyUser();
-  },[navigate]);
 
     let toggleButton = useRef(true);
     if(userdata.companyName !== "" &&
@@ -101,59 +93,110 @@ function Register() {
      }
   };
 //registation <>
-  const submitRegistation = async() => {
-    try{
-      const regCom = await Altaxios.post("/users/register",userdata);
-            setResMessage(regCom.data.message);
-            setResMsgStyle({color:"green",opacity:1,marginTop:"15px"});
-            setLoading(false);
-            SetuserData({companyName:"",industry:"",numberofEmployees:"",companyEmail:"",companyPassword:"",rePassword:"",verifyCode:null});
-            setTimeout(() => {
-                setResMsgStyle({opacity:0,marginTop:"0px"});
-                navigate('/verifyemail');
-            },3000);
-    }catch(error){
+// Registration Function (Corrected)
+const submitRegistation = async () => {
+  setLoading(true);
+  setResMessage("");
+
+  try {
+    const CompanyData = new FormData();
+    CompanyData.append("file", emplyeeProfile);
+    CompanyData.append("companyName", userdata.companyName);
+    CompanyData.append("industry", userdata.industry);
+    CompanyData.append("numberofEmployees", userdata.numberofEmployees);
+    CompanyData.append("companyEmail", userdata.companyEmail);
+    CompanyData.append("companyPassword", userdata.companyPassword);
+    CompanyData.append("rePassword", userdata.rePassword);
+    CompanyData.append("verifyCode", userdata.verifyCode);
+
+    // ⬅⬅ FIXED — MUST USE AWAIT
+    const res = await register(CompanyData);
+
+    // Success message
+    setResMessage(res.data.message);
+    setResMsgStyle({ color: "green", opacity: 1, marginTop: "15px" });
+
+    // Save Access Data
+    localStorage.setItem("AccessData", JSON.stringify(res.data.AccessData));
+
+    // Reset form
+    SetuserData({
+      companyName: "",
+      industry: "",
+      numberofEmployees: "",
+      companyEmail: "",
+      companyPassword: "",
+      rePassword: "",
+      verifyCode: null
+    });
+
+    setTimeout(() => {
+      setResMsgStyle({ opacity: 0 });
+      navigate("/verifyemail");
+    }, 2500);
+
+  } catch (error) {
+    console.log(error);
+
     if (error.response) {
-            setResMessage(error.response.data.message || "Something went wrong");
-            setResMsgStyle({color:"red",opacity:1,marginTop:"15px",})
-            setTimeout(() => {
-              setLoading(false);
-                setResMsgStyle({opacity:0,marginTop:"0px"})
-            },3000);
-        } else {
-              console.error('Unexpected Error:', error.message);
-              setResMessage("Network error or server issue. Please try again later.");
-            setResMsgStyle({color:"red",opacity:1,marginTop:"15px",})
-            setTimeout(() => {
-              setLoading(false);
-                setResMsgStyle({opacity:0,marginTop:"0px"})
-            },3000);
+      setResMessage(error.response.data.message || "Something went wrong");
+    } else {
+      setResMessage("Network error or server issue. Please try again later.");
     }
-    }      
+
+    setResMsgStyle({ color: "red", opacity: 1, marginTop: "15px" });
+
+    setTimeout(() => {
+      setResMsgStyle({ opacity: 0 });
+    }, 3000);
+
+  } finally {
+    setLoading(false);
   }
+};
 //registation </>
 // toggle password <>
-let inVisible = false;
 const TogglePass = () => {
-  const inpId = document.getElementById("passOneIn");
-  const inpIdtwo = document.getElementById("passTwoIn");
-  const showeone = document.getElementById("showPass");
-  const hideone = document.getElementById("hidePass");
 if(inVisible){
-  inpId.type = "password";
-  inpIdtwo.type = "password";
-  showeone.style = "display:block";
-  hideone.style = "display:none !important";
-  inVisible = false;
+  passwordOne.current.type = "password";
+  passwordTwo.current.type = "password";
+  setIsVisible(false)
 }else{
-  inpId.type = "text";
-  inpIdtwo.type = "text";
-  hideone.style = "display:block";
-  showeone.style = "display:none !important";
-  inVisible = true;
+  passwordOne.current.type = "text";
+  passwordTwo.current.type = "text";
+  setIsVisible(true)
 }
 };
 // toggle password </> //
+
+//preview photos  start
+const uploadReviewPhotos = (e) => {
+  preview.current.innerHTML = "";
+  let files = e.currentTarget.files[0];
+  if(files){
+    setEmplyeeProfile(files);
+  function readAndPreview(file) {
+    if (/\.(jpe?g|png|gif)$/i.test(file.name)) {
+      const reader = new FileReader();
+      reader.addEventListener(
+        "load",
+        () => {
+          const image = new Image();
+          image.className = "productPreviwstyle";
+          image.title = file.name;
+          image.src = reader.result;
+          preview.current.appendChild(image);
+        },
+        false,
+      );
+      reader.readAsDataURL(file);
+  
+    }
+  }
+  readAndPreview(files);
+  }
+}
+//preview photos  end
 
   return (
     <div className="contactContainerMain">
@@ -212,17 +255,22 @@ if(inVisible){
         <div className="passwordPr">
         <label htmlFor='passOneIn' className="passwordContinerLabel">
             <span className='userinfotextdemo'>password</span>
-            <input type="password" autoComplete="off" name="companyPassword" value={userdata.companyPassword} id="passOneIn" placeholder="Enter password" onChange={getData} className='contactinput LogregsiterpassInput'/>
+            <input type="password" autoComplete="off" name="companyPassword" value={userdata.companyPassword} id="passOneIn" ref={passwordOne} placeholder="Enter password" onChange={getData} className='contactinput LogregsiterpassInput'/>
         </label>
         <div className="passBtnreg">
-            <VisibilityOutlinedIcon id="showPass" className="allPassBtn" onClick={TogglePass}/>
-            <VisibilityOffOutlinedIcon id="hidePass" className="allPassBtn" onClick={TogglePass}/>
+            <VisibilityOutlinedIcon className="allPassBtn" style={{display:`${!inVisible ? 'block' : 'none'}`}} onClick={TogglePass}/>
+            <VisibilityOffOutlinedIcon  className="allPassBtn" style={{display:`${inVisible ? 'block' : 'none'}`}} onClick={TogglePass}/>
         </div>
         </div>
         <label htmlFor='passTwoIn'>
             <span className='userinfotextdemo'>re-password</span>
-            <input type="password" autoComplete="off" name="rePassword" value={userdata.rePassword} placeholder="Retype password" id="passTwoIn" onChange={getData} className='contactinput'/>
+            <input type="password" autoComplete="off" name="rePassword" ref={passwordTwo} value={userdata.rePassword} placeholder="Retype password" id="passTwoIn" onChange={getData} className='contactinput'/>
         </label>
+        <div className='inputDataForYemployee' style={{marginBottom:'7px'}}>
+          <label htmlFor='yemplyee__Profile' style={{color:'#ccccccad',margin:'0px',fontSize:'11px'}}>Companies Profile / Logo</label>
+          <input type='file' id="yemplyee__Profile" name="EmplyeeProfile" multiple={false} onChange={uploadReviewPhotos} ref={inputFile} style={{width:'418px',height:'46px',lineHeight:'36px',borderRadius:'5px'}}/>
+        </div>
+        <div id="imageViewrlist" style={{width:'150px',margin:'10px auto'}} ref={preview}></div>
       <button className='contactsendbtn' onClick={submitRegistation} disabled={toggleButton.current}>{loading ? "Trying..." : "Register"}</button>
         <div className='showErrorOrSuccess' style={resMsgStyle}>{resMessage}</div>
         </div>

@@ -25,7 +25,7 @@ useEffect(()=>{
           try{
             const product = await Altaxios.get(`/newproduct/getSingleProduct/${productId}`);
           if(product.status === 200){
-            const proData = product.data.product;
+            const proData = product.data.data;
             setCurrentProductsEX(proData);
             setProductInfo({
                 ProductName:proData?.ProductName,
@@ -33,7 +33,7 @@ useEffect(()=>{
                 InStockQuentity:proData?.InStockQuentity,
             });
             setProductImg(proData?.productImgFile);
-            setCheckedGoals(proData?.GoalIdentifire[0].split(","));
+            setCheckedGoals(proData?.GoalIdentifire[0].split(",") ?? []);
           }
         }catch(error){
           if(error.response){
@@ -71,7 +71,7 @@ useEffect(() => {
   const existingGoals = currentProducsEX?.GoalIdentifire !== undefined ? String(currentProducsEX?.GoalIdentifire[0]).split(",").map(s => s.trim()).filter(Boolean) : [];
 
   const goalsChanged = (checkedGoals.length === 0) ? true : (checkedGoals.length > 0 &&
-    existingGoals.every(val => checkedGoals.includes(val)));
+    existingGoals.every(val => checkedGoals?.length > 0 ? checkedGoals?.includes(val) : false));
 
   const imageChanged = productImgFile === null;
     
@@ -115,6 +115,7 @@ useEffect(() => {
  
   const updatePorduct = async() => {
     try{
+      setIsEnableBtn(true);
     const ProductData = new FormData();
     ProductData.append("ProductName",porductInfo.ProductName);
     ProductData.append("ProductPrice",porductInfo.ProductPrice);
@@ -130,7 +131,6 @@ useEffect(() => {
     );
       if(addProduct.status === 200){
         setResMessage(addProduct.data.message);
-        console.log(addProduct.data.data);
             const proData = addProduct.data.data;
             setCurrentProductsEX(proData);
             setProductInfo({
@@ -139,7 +139,7 @@ useEffect(() => {
                 InStockQuentity:proData?.InStockQuentity,
             });
             setProductImg(proData?.productImgFile);
-            setCheckedGoals(proData?.GoalIdentifire[0].split(","));
+            setCheckedGoals(proData?.GoalIdentifire[0].split(",") ?? []);
 
         setResMsgStyle({color:"green",opacity:1});
         setProductImgFile(null);
@@ -158,6 +158,8 @@ useEffect(() => {
         setResMessage("Something went wrong!");
         console.log(error);
       }
+    }finally{
+      setIsEnableBtn(false);
     }
   };
 
@@ -185,11 +187,11 @@ const handleCheck = (id, checked) => {
             <div className="addProductClientFrom">
               <div className="addProductInputClientMain">
                 <label htmlFor="ProductName">Product/Service Name</label>
-                <input type="text" id="ProductName" name="ProductName" placeholder="product/service name..." value={porductInfo.ProductName} onChange={AddProductData}/>
+                <input type="text" id="ProductName" name="ProductName" placeholder="product/service name..." value={porductInfo.ProductName ?? ""} onChange={AddProductData}/>
               </div>
               <div className="addProductInputClientMain">
                 <label htmlFor="ProductPrice">Product/Service Price</label>
-                <input type="number" id="ProductPrice" name="ProductPrice" placeholder="product/service price..." value={porductInfo.ProductPrice} onChange={AddProductData}/>
+                <input type="number" id="ProductPrice" name="ProductPrice" placeholder="product/service price..." value={porductInfo.ProductPrice ?? ""} onChange={AddProductData}/>
               </div>
               <div className="addProductInputClientMain">
                 <span>Product/Service Image</span>
@@ -206,7 +208,7 @@ const handleCheck = (id, checked) => {
               </div>
               <div className="addProductInputClientMain">
                 <label htmlFor="InStockQuentity">Total Quantity</label>
-                <input type="number" placeholder="total saleable units..." id="InStockQuentity" name="InStockQuentity" value={porductInfo.InStockQuentity} onChange={AddProductData}/>
+                <input type="number" placeholder="total saleable units..." id="InStockQuentity" name="InStockQuentity" value={porductInfo.InStockQuentity ?? ""} onChange={AddProductData}/>
               </div>
               <div className="addProductInputClientMain">
                 <span>Select Goal</span>
@@ -218,7 +220,7 @@ const handleCheck = (id, checked) => {
               e.currentTarget.lastElementChild.click();
             }
           }}>
-                      <span>{data.targetName}</span> <input type="checkbox" value={data._id} checked={checkedGoals.includes(data._id)} name={data.targetName} onChange={(e) => handleCheck(data._id, e.target.checked)}/>
+                      <span>{data.targetName}</span> <input type="checkbox" value={data._id ?? ""} checked={checkedGoals.length > 0 ? checkedGoals?.includes(data._id) : false } name={data.targetName} onChange={(e) => handleCheck(data._id, e.target.checked)}/>
                     </div>
                     )) : (
                           <div className="GoalSelectionInner">

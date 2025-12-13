@@ -6,6 +6,8 @@ import { Link } from 'react-router-dom';
 import View from './View';
 //import PersonIcon from '@mui/icons-material/Person';
 import AddIcon from '@mui/icons-material/Add';
+import avaterProfiel from '../../../images/profile/male.png';
+import { useAuth } from "../../../context/AuthContext";
 
 const Main = () => {
   const [employeePopup,setEmployeePopup] = useState(false);
@@ -16,6 +18,25 @@ const Main = () => {
   const offset = useRef({ x: 0, y: 0 });
   const [currentEmployee,setCurrentEmployee] = useState([]);
   const [emplyeeProfile,setEmplyeeProfile] = useState(null);
+  const {user} = useAuth();
+
+  const employeeRoal = ["Owner",
+                    "Admin",
+                    "CEO",
+                    "Manager",
+                    "Supervisor",
+                    "HR",
+                    "Finance",
+                    "Accountant",
+                    "Sales",
+                    "Marketing",
+                    "Engineer",
+                    "Technician",
+                    "Driver",
+                    "Worker",
+                    "Support",
+                    "Guest"
+                ];
   const [emplyeeAddData,setEmployeeData] = useState({
     YemplyeeName:"",
     YemplyeePhone:"",
@@ -67,7 +88,7 @@ const Main = () => {
             try{
               const product = await Altaxios.get("/newproduct/getallProducts/");
             if(product.status === 200){
-              setCurrentProducts(product.data.data)
+              setCurrentProducts(product.data.data || []);
             }
           }catch(error){
             if(error.response){
@@ -190,7 +211,7 @@ const uploadReviewPhotos = (e) => {
     EmploeeData.append("EmplyeeJoinDate",emplyeeAddData.EmplyeeJoinDate);
     EmploeeData.append("EmplyeeRoal",emplyeeAddData.EmplyeeRoal);
     EmploeeData.append("file",emplyeeProfile);
-    const adEmplyees = await Altaxios.put('/newemplyee/addemplyee',EmploeeData,
+    const adEmplyees = await Altaxios.post('/newemplyee/addemplyee',EmploeeData,
       {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -233,6 +254,7 @@ const uploadReviewPhotos = (e) => {
     }
     // console.log(addEmply);
   };
+
   return (
     <div className='MainContainer'>
       <div className='addEmplyeePopup' style={{top:`${position.y}px`,left:`${position.x}px`,display: employeePopup ? 'block' : 'none'}}  
@@ -240,7 +262,9 @@ const uploadReviewPhotos = (e) => {
         <CloseIcon onClick={ToggleEmplyeePopup}/>
         <div className='addEmplyeeInner'>
           <div className='YemplyeeDataContainer'>
-            <h2>Add New Emplyee</h2>
+            <div className='newPerentEmployee'>
+              <h2>Add New Emplyee</h2>
+            </div>
               <div className='inputDataForYemployee'>
                 <label htmlFor='yemplyeename__add'>Yemplyee name</label>
                 <input type='text' id="yemplyeename__add" name="YemplyeeName"  value={emplyeeAddData.YemplyeeName} placeholder='yemplyee name' onChange={setEmplyeeData}/>
@@ -268,30 +292,21 @@ const uploadReviewPhotos = (e) => {
               <div className='inputDataForYemployeeRoal'>
                 <h4>Yemplyee Roal</h4>
                 <div className='yemplyeeRadioContianer'>
-                <div className='YemplyeeroalContainer'>
-                  <label htmlFor='yemplyeeroal__Admin'>Admin</label>
-                  <input type='radio' id="yemplyeeroal__Admin" name="EmplyeeRoal" value="Admin" checked={emplyeeAddData.EmplyeeRoal === "Admin"} onChange={setEmplyeeData}/>
-                </div>
-                <div className='YemplyeeroalContainer'>
-                  <label htmlFor='yemplyeeroal__Manager'>Manager</label>
-                  <input type='radio' id="yemplyeeroal__Manager" name="EmplyeeRoal" value="Manager" checked={emplyeeAddData.EmplyeeRoal === "Manager"} onChange={setEmplyeeData}/>
-                </div>
-                <div className='YemplyeeroalContainer'>
-                  <label htmlFor='yemplyeeroal__Author'>Author</label>
-                  <input type='radio' id="yemplyeeroal__Author" name="EmplyeeRoal" value="Author" checked={emplyeeAddData.EmplyeeRoal === "Author"} onChange={setEmplyeeData}/>
-                </div>
-                <div className='YemplyeeroalContainer'>
-                  <label htmlFor='yemplyeeroal__Editor'>Editor</label>
-                  <input type='radio' id="yemplyeeroal__Editor" name="EmplyeeRoal" value="Editor" checked={emplyeeAddData.EmplyeeRoal === "Editor"} onChange={setEmplyeeData}/>
-                </div>
+                  {
+                    employeeRoal.map((d) => (
+                      <div className='YemplyeeroalContainer' key={d}>
+                        <label htmlFor={`yemplyeeroal__${d}`}>{d}</label>
+                        <input type='radio' id={`yemplyeeroal__${d}`} name="EmplyeeRoal" value={d} checked={emplyeeAddData.EmplyeeRoal === d} onChange={setEmplyeeData}/>
+                      </div>
+                    ))
+                  }
               </div>
               </div>
               <div className='inputDataForYemployee'>
                   <label htmlFor='yemplyee__Profile'>Select Profile</label>
                   <input type='file' id="yemplyee__Profile" name="EmplyeeProfile" multiple={false} onChange={uploadReviewPhotos} ref={inputFile}/>
               </div>
-              <div id="imageViewrlist" style={{width:'150px',marginTop:'10px'}} ref={preview}>
-              </div>
+              <div id="imageViewrlist" style={{width:'150px',marginTop:'10px'}} ref={preview}></div>
               <button onClick={AddnewEmplyee} disabled={isFullData}>Submit</button>
               <div className='showErrorOrSuccess' style={resMsgStyle}>{resMessage}</div>
           </div>
@@ -318,16 +333,17 @@ const uploadReviewPhotos = (e) => {
             </div>
             <div className='EmplyeeListContainer'>
               {
-                currentEmployee.map(Employee => (
+                currentEmployee.length > 0 ? currentEmployee.filter(emp => emp._id !== user?.employeeId).map(Employee => (
             <ul key={Employee._id}>
-                <li><img src={Employee.EmplyeeProfile} alt="Employee Profile" width="40px" height="40px" style={{borderRadius:'4px'}}/></li>
-                <li>{Employee.YemplyeeName}</li>
-                <li>{Employee.EmplyeeRoal}</li>
+                <li><img src={Employee.EmplyeeProfile ?? avaterProfiel} alt="Employee Profile" width="40px" height="40px" style={{borderRadius:'4px'}}/></li>
+                <li>{Employee.YemplyeeName ?? "Admin"}</li>
+                <li>{Employee.EmplyeeRoal ?? "Admin"}</li>
                 <li>{Employee.activeStatus ? "Active" : "InActive"}</li>
-                <li>{Employee.EmplyeeSellary}</li>
-                <li><Link to={`theemployee/${Employee._id}`}>View</Link></li>
+                <li>{Employee.EmplyeeSellary ?? "0,0000"}</li>
+                <li><Link to={`/theemployee/${Employee._id}`}>View</Link></li>
               </ul>
                 ))
+                : (<div style={{textAlign:'center',paddingTop:'84px',color:'#ccc'}}>Don't have any employee yet!</div>)
               }
             </div>
           </div>
@@ -372,7 +388,6 @@ const uploadReviewPhotos = (e) => {
                           </div>
                           )
                         }
-          
                       </div>
                     </div>
         </div>

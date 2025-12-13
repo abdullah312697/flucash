@@ -1,9 +1,12 @@
 import express from 'express';
 const router = express.Router();
 import Companies from "../models/Companies.js";
+import Employee from "../models/Employee.js";
 import kingAdmin from "../models/KingUser.js";
 import { createTransport } from 'nodemailer';
 import{encryptUserData,decryptUserData,encryptCompanyPassword,decryptCompanyPassword} from '../verifyuser.js';
+import multerProcess from '../multerMiddleware.js';
+import { uploadImage } from '../cloudinary.js';
 
 function validateCookie(req, res, next) {
     const { userCookie } = req.cookies;
@@ -27,8 +30,11 @@ function validateCookie(req, res, next) {
 
 //user register<>
 router.post("/register", async(req,res) => {
-    const {companyName,industry,companyEmail,companyPassword,rePassword,verifyCode,numberofEmployees} = req.body;
+      multerProcess(req, res, async (err) => {
+if (err) return res.status(400).json({ message: err.message });
     try{
+    const {companyName,industry,companyEmail,companyPassword,rePassword,verifyCode,numberofEmployees} = req.body;
+
         const estr = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if(companyName === "" ||   industry === "" ||   companyEmail === "" ||
@@ -44,17 +50,37 @@ router.post("/register", async(req,res) => {
             return res.status(400).json({message:"Password must have (A-Z, a-z, 1-9, @,$,!)"});
         }else if(companyPassword !== rePassword){
             return res.status(400).json({message:"Password not Match!"});
-        }else{
-            const newUser = new Companies({
+        }else if (!req.file) {
+            return res.status(400).json({ message: "Please upload a Company Profile/Logo" });
+        }else {
+                  const file = req.file;
+                  const uploadResult = await uploadImage(
+                    file.buffer,
+                    Date.now().toString(),
+                    "CompanyLogo",
+                    file.mimetype
+                  );
+                        
+             const employeePass = encryptCompanyPassword(companyPassword);
+            const newUser = {
                 companyName,
                 industry,
                 companyEmail,
                 numberofEmployees,
-                companyPassword:encryptCompanyPassword(companyPassword),
-                verifyCode
-            });
-            const saveUser = await newUser.save();
-            if (!saveUser) {
+                companyPassword:employeePass,
+                verifyCode,
+                companyLogo: uploadResult.secure_url,
+                CloudinaryPublicId: uploadResult.public_id,
+            };
+            const saveUser = await Companies.create(newUser);
+             const companyId = saveUser._id.toString();
+            const EmplyeeData = {
+                companyId: companyId,
+                YemplyeeEmail : companyEmail,
+                employeeAccessPassword : employeePass,
+            };
+            const newEmployee = await Employee.create(EmplyeeData);
+            if (!saveUser || !newEmployee) {
                 return res.status(500).json({message:"Failed to create user"});
             }
             const oneYearInSeconds = 365 * 24 * 60 * 60;
@@ -96,15 +122,30 @@ router.post("/register", async(req,res) => {
                         console.error("Email sending error:", err);
                         return res.status(500).json({ message: "Failed to send Email" });
                     }else{
-                        const encryptedData = encryptUserData(saveUser._id.toString());
+                        const companyIdEnc = encryptUserData(companyId);
+                        const employeeIdEnc = encryptUserData(newEmployee._id.toString());
+                        const AccessData = {
+                            companyName:saveUser.companyName, 
+                            companyLogo:saveUser.companyLogo,
+                        };
                         return res.status(200).cookie(
-                            "userId",encryptedData,
+                            "companyId",companyIdEnc,
                             {
                             path: '/',
                             httpOnly: true,
                             maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
                             }
-                        ).json({data:saveUser, message:"Verify Your Email!"});
+                        ).cookie(
+                        "employeeId",employeeIdEnc,
+                            {
+                            path: '/',
+                            httpOnly: true,
+                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
+                            }
+                        ).json({
+                                message:"Verify Your Email!",
+                                AccessData
+                            });
                     }
                     }catch(error){
                         console.error("Response error:", error);
@@ -117,41 +158,101 @@ router.post("/register", async(req,res) => {
         console.log(err);
         return res.status(500).json({message:"Something went wrong"});
     }
+      });
 });
 //user register</>
 
 //sende a vefiry code<>
-router.post("/verifyCode", async(req,res) => {
-    const {userId} = req.cookies;
-    const DuserId = decryptUserData(userId);
-    const vfCode = req.body.verifyCode;
-    try{
-        if(vfCode === "" || vfCode.length < 6){
-            return res.status(400).json({message:"field must not be empty!"});
-        }else{
-            const userData = await Companies.findById(DuserId);
-             if(userData.verifyCode !== Number(vfCode)){
-               return res.status(400).json({message:"verification code is wrong!"});
-            }else{
-                const setVf = await Companies.findByIdAndUpdate(DuserId,{isVerify:true},{new:true}).select("fullname gender phone isVerify email");
-                if(setVf){
-                    return res.status(200).json({message:"Email Verify Successfully!"});
-                }
-            }
-        }
-    }catch(e){
-        console.log(e);
-        return res.status(500).json({message:"Something went wrong"});
-    } 
+router.post("/verifyCode", async (req, res) => {
+  try {
+    const { companyId, employeeId } = req.cookies;
+    const { verifyCode } = req.body;
+
+    // -------------------------
+    // 1. Validate cookies exist
+    //--------------------------
+    if (!companyId || !employeeId) {
+      return res.status(400).json({ message: "Please login or register!" });
+    }
+
+    // -------------------------
+    // 2. Decrypt IDs
+    //--------------------------
+    const decryptedCompanyId = decryptUserData(companyId);
+    const decryptedEmployeeId = decryptUserData(employeeId);
+
+    if (!decryptedCompanyId || !decryptedEmployeeId) {
+      return res.status(400).json({ message: "Invalid or expired session!" });
+    }
+
+    // -------------------------
+    // 3. Validate input
+    //--------------------------
+    if (!verifyCode || verifyCode.length !== 6) {
+      return res.status(400).json({ message: "Verification code must be 6 digits!" });
+    }
+
+    // -------------------------
+    // 4. Find Company
+    //--------------------------
+    const company = await Companies.findById(decryptedCompanyId).select("-companyPassword");
+    if (!company) {
+      return res.status(404).json({ message: "Company not found!" });
+    }
+
+    if (company.verifyCode !== Number(verifyCode)) {
+      return res.status(400).json({ message: "Incorrect verification code!" });
+    }
+
+    // -------------------------
+    // 5. Find Employee
+    //--------------------------
+    const employee = await Employee.findById(decryptedEmployeeId).select("-employeeAccessPassword");
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found!" });
+    }
+
+    // -------------------------
+    // 6. Verify email (update DB)
+    //--------------------------
+    await Companies.findByIdAndUpdate(decryptedCompanyId, {
+      $set: {
+        isVerify: true,  // important: mark verified!
+        verifyCode: null // remove code after verification
+      }
+    });
+
+    // -------------------------
+    // 7. Prepare AccessData for AuthContext
+    //--------------------------
+    const AccessData = {
+    
+      companyName: company.companyName,
+      companyLogo: company.companyLogo,
+      employeeId: employee._id,
+      employeeName: employee.YemplyeeName,
+      employeeRoal: employee.EmplyeeRoal,
+      employeeProfile: employee.EmplyeeProfile,
+    };
+
+    return res.status(200).json({
+      message: "Email verified successfully!",
+      AccessData,
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
 });
 //sende a vefiry code</>
 //update vefiry code<>
 router.put("/updateVfCode", async(req,res) => {
-    const {userId} = req.cookies;
-    const DuserId = decryptUserData(userId);
+    const {companyId} = req.cookies;
+    const DecreptedCompanyId = decryptUserData(companyId);
     const vfCode = Number(req.body.verifyCode);
     try{
-        const geUptd = await Companies.findByIdAndUpdate(DuserId, {verifyCode:vfCode},{new:true});
+        const geUptd = await Companies.findByIdAndUpdate(DecreptedCompanyId, {verifyCode:vfCode},{new:true});
         if(geUptd){
             const transporter = createTransport({
                 service : "gmail",
@@ -203,78 +304,108 @@ router.put("/updateVfCode", async(req,res) => {
 
 });
 //update vefiry code</>
-//check if user email vefiry or not<>
-router.get("/vefiryUsers", async(req,res) => {
-    try{
-    const {userId} = req.cookies;
-    const DuserId = decryptUserData(userId);
-    if(!userId){
-        return res.status(400).json({message:"usrId not found"});
-    }else{
-        const checkisVarify = await Companies.findById(DuserId);
-        if(checkisVarify.isVerify === true){
-            return res.status(400).json({message:"usrId not found"});
-        }else{
-            return res.status(200).json({message:"usrId found"});
-        }
-    }
-    }catch(error){
-        console.log(error);
-        return res.status(500).json({message:"Something went wrong"});
-    }
-});
-//check if user email vefiry or not</>
+
+
 //vefiry if user log or not<>
 router.get("/vefiryUsersLog", async(req,res) => {
     try{
-    const {userId} = req.cookies;
-    if(userId){
-        return res.status(200).json({message:"usrId found"});
-    }else{
-        return res.status(400).json({message:"usrId not found"});
+    const { companyId, employeeId } = req.cookies;
+    // Check if cookies exist
+    if (!companyId || !employeeId) {
+      return res.status(400).json({ message: "Please login or register!" });
     }
-    }catch(error){
+        // Decrypt IDs
+    const decryptedCompanyId = decryptUserData(companyId);
+    const decryptedEmployeeId = decryptUserData(employeeId);
+
+        const company = await Companies.findById(decryptedCompanyId).select("-companyPassword");
+        if(!company.isVerify){
+            return res.status(400).json({message:"Verify your email"});
+        }
+
+    // Find employee
+    const employee = await Employee.findById(decryptedEmployeeId).select("-employeeAccessPassword");
+    if (!employee || !company) {
+      return res.status(400).json({ message: "Not Found or not registered!" });
+    }
+    // Validate company ID
+    if (employee.companyId.toString() !== decryptedCompanyId.toString()) {
+      return res.status(400).json({ message: "Company and employee do not match!" });
+    }
+        const AccessData = {
+          companyName:company.companyName,
+          companyLogo:company.companyLogo,
+          employeeId: employee._id,
+          employeeName: employee.YemplyeeName,
+          employeeRoal: employee.EmplyeeRoal,
+          employeeProfile: employee.EmplyeeProfile,
+      }
+    // Success
+    return res.status(200).json({ message: "Company and employee verified successfully.", AccessData});
+}catch(error){
         console.log(error);
         return res.status(500).json({message:"Something went wrong"});
     }
 });
 //vefiry if user log or not</>
-//user login <>
-router.post("/useLogin", async(req,res) => {
-    try{
-        const EmailCP = req.body.companyEmail;
-        if(req.body.companyEmail === "" || req.body.companyPassword === ""){
-            return res.status(400).json({message:"Filed must not be Empty!"});
-        }else{
-            await Companies.findOne({companyEmail:req.body.companyEmail}).then((user) => {
-                if(!user){
-                    return res.status(400).json({message:"Email or password not match!"});
-                }else{
-                        const encrypteuserID = encryptUserData(user._id.toString());
-                        const dbPass = decryptCompanyPassword(user.companyPassword);
-                        if(req.body.companyPassword !== dbPass){
-                            return res.status(400).json({message:"Email or password not match!"})
-                        }else{
-                        const oneYearInSeconds = 365 * 24 * 60 * 60;
-                        return res.status(200).cookie(
-                            "userId",encrypteuserID,
-                            {
-                            path: '/',
-                            secure: true,
-                            httpOnly: true,
-                            sameSite: 'Strict',
-                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
-                            }
-                        ).json({message:"Login Successfullay!"});
-                    }
-                    }
-                })
-        }
-    }catch(e){
-        console.log(e)
-        return res.status(500).json({message:"Something went wrong"});
+
+router.post("/useLogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Fields must not be empty!" });
     }
+    let employee = await Employee.findOne({ YemplyeeEmail: email });
+
+    if (!employee) {
+      return res.status(400).json({ message: "Email or password not match!" });
+    }
+      const dbPass = decryptCompanyPassword(employee.employeeAccessPassword);
+      if (password !== dbPass) {
+        return res.status(400).json({ message: "Email or password not match!" });
+      }
+      const comIdStr = employee.companyId.toString();
+      const EmployeeComData = await Companies.findById(comIdStr);
+      if(!EmployeeComData){
+        return res.status(400).json({message:"something wrong!"})
+      }
+      const encryptedId = encryptUserData(employee._id.toString());
+      const encryptedCompanyId = encryptUserData(employee.companyId.toString());
+      const oneYearInSeconds = 365 * 24 * 60 * 60;
+      const AccessData = {
+          companyName:EmployeeComData.companyName,
+          companyLogo:EmployeeComData.companyLogo,
+          employeeId: employee._id,
+          employeeName: employee.YemplyeeName,
+          employeeRoal: employee.EmplyeeRoal,
+          employeeProfile: employee.EmplyeeProfile,
+      }
+      return res
+        .status(200)
+        .cookie("employeeId", encryptedId, {
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          sameSite: "Strict",
+          maxAge: oneYearInSeconds * 1000
+        })
+        .cookie("companyId", encryptedCompanyId, {
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          sameSite: "Strict",
+          maxAge: oneYearInSeconds * 1000
+        })
+        .json({
+          message: "Employee login successful!",
+          AccessData
+        });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
 });
+
 //user login </>
 //admin user login <>
 router.post("/king_userLogin", async(req,res) => {
@@ -332,28 +463,26 @@ router.get("/vefiryKingUsersLog", async(req,res) => {
 //vefiry if user log or not</>
 
 //user logout <>
-router.get("/logOut",(req,res)=>{
-    try{
-        const clrCookie = res.clearCookie("userId");
-        if(clrCookie){
-            return res.status(200).json({message:"you are loged out!"});
-        }else{
-            return res.status(400).json({message:"something wrong!"});
-        }
+router.get("/logout", (req, res) => {
+  try {
+    // Clear both cookies separately
+    res.clearCookie("companyId", { path: "/" });
+    res.clearCookie("employeeId", { path: "/" });
 
-    }catch(e){
-        console.log(e);
-        return res.status(500).json({message:"Something went wrong"});
-    }
+    return res.status(200).json({ message: "You are logged out!" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong." });
+  }
 });
 //user logout </>
 
 //user profile data get <>
 router.get("/userProfileData",async(req,res) => {
-    const {userId} = req.cookies;
-    const DuserId = decryptUserData(userId);
+    const {companyId} = req.cookies;
+    const DecreptedCompanyId = decryptUserData(companyId);
     try{
-        const userData = await Companies.findById(DuserId).select("fullname email isVerify gender phone");
+        const userData = await Companies.findById(DecreptedCompanyId).select("fullname email isVerify gender phone");
         if(userData){            
             return res.status(200).json(userData);
         }else{
@@ -368,7 +497,7 @@ router.get("/userProfileData",async(req,res) => {
 //user order add to cart <>
 // router.put("/addToCart",async(req,res) => {
 //     try{
-//         const userData = await Companies.findById(userId);
+//         const userData = await Companies.findById(companyId);
 //         if(userData){            
 //            return res.status(200).json(userData);
 //         }else{
