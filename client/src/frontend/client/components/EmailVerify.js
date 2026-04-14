@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Altaxios } from "../../Altaxios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../../context/AuthContext';
@@ -9,9 +9,11 @@ const EmailVerify = () => {
   const [isCheckEmpty, setIsCheckEmpty] = useState(true);
   const [isResend, setIsResend] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const {user} = useAuth();
+  const {user, emailVerify} = useAuth();
   const navigate = useNavigate();
-
+  useEffect(() => {
+    user?.isVerify && navigate(`/company/${user?.companyName ?? "fortune"}`);
+  },[user,navigate]);
   // ⬇️ Array of 6 input refs
   const inputsRef = useRef([]);
   // Load localStorage data safely
@@ -103,15 +105,14 @@ const EmailVerify = () => {
       .join("");
 
     try {
-      const response = await Altaxios.post("/users/verifyCode", {
-        verifyCode,
-      });
-
-      setErrMsg(response.data.message);
+      const isVerifyRes = await emailVerify(verifyCode);
+      setErrMsg(isVerifyRes.data.message);
       setMsgStyle({ opacity: 1, color: "green" });
 
       setTimeout(() => {
-        navigate(`/company/${user.companyName ?? "fortune"}`);
+        if(isVerifyRes?.data?.AccessData?.isVerify === true){
+          navigate(`/company/${user?.companyName ?? "fortune"}`);
+        }
         setMsgStyle({ opacity: 0 });
       }, 3000);
     } catch (err) {

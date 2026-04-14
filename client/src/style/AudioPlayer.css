@@ -1,0 +1,28 @@
+.wave-audio {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+  }
+
+.play-btn {
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.autioPlayerCanvasContainer{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.wave-canvas {
+    cursor: pointer;
+  }
+
+.duration {
+    font-size: 10px;
+    color: #7b8a8f;
+  }

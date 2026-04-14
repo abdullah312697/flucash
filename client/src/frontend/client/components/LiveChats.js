@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
 import PermMediaOutlinedIcon from '@mui/icons-material/PermMediaOutlined';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
@@ -8,20 +8,22 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import KeyboardArrowUpOutlinedIcon from '@mui/icons-material/KeyboardArrowUpOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import { Altaxios } from '../../Altaxios';
-import { differenceInMinutes, differenceInHours, differenceInDays, differenceInYears, differenceInMonths } from 'date-fns';
 import { useAuth } from "../../../context/AuthContext";
 import { useParams } from 'react-router-dom';
 import {socket} from '../../../socket';
 import CallIcon from '@mui/icons-material/Call';
 import VideoCallIcon from '@mui/icons-material/VideoCall';
-
+import TypingIndicator from "./TypingIndicator";
 //call section imports<>
 import { useWebRTCv2 } from "../../../hooks/useWebRTCv2";
 import IncomingCallPopup from "./IncomingCallPopup";
 import CallFloatingView from "./CallFloatingView";
 //call section imports</>
+import { ReactComponent as SentIcon } from "../../../vactors/eye-closed.svg";
+import { ReactComponent as DeliveredIcon } from "../../../vactors/eye-half-open.svg";
+import { ReactComponent as SeenIcon } from "../../../vactors/eye-open.svg";
 
-function LiveChats() {
+function LiveChats({employeeData}) {
   const [open, setOpen] = useState(false);
   const [isPopup, setIsPopup] = useState(false);
   const [minimized, setMinimized] = useState(false);
@@ -34,34 +36,40 @@ function LiveChats() {
   const endRef = useRef(null);
   const nodeRef = useRef(null);
   const innerRef = useRef(null);
+  const [isTypingStart,setIsTypingStart] = useState(false);
   const popupTimerRef = useRef(null);
+  const typingTimeManageRef = useRef(null);
   const [convInfo,setConvInfo] = useState({type:"private", participants:[], title:"", avater:"",});
   const {user} = useAuth();
   const {employeeId} = useParams();
-    const webrtc = useWebRTCv2();
-
-  const startCall = (callType) => {
+  const webrtc = useWebRTCv2();
+  const [isStartCall,setIsStartCall] = useState(false);
+  
+  const startCall = (callType, calleeName, calleeImg, callerName, callerImg ) => {
+    setIsStartCall(true);
   if (!convInfo.participants.length) return alert("Add at least one participant to call");
 
-  const calleeParticipants = convInfo.participants.filter(id => id !== user.employeeId);
-
+  const calleeParticipants = convInfo.participants.filter(id => id !== user?.employeeId);
   if (!calleeParticipants.length) return alert("No valid participant to call");
-
   webrtc.startCall({
     participants: calleeParticipants,
     callType,
-    conversationId: conversation._id
+    conversationId: conversation?._id,
+    calleeName, 
+    calleeImg,
+    callerName,
+    callerImg
   });
 };
 
   useEffect(() => {
-  if (!user?.employeeId || !employeeId) return;
+  if (!employeeId || !user?.employeeId) return;
 
   setConvInfo(prev => ({
     ...prev,
-    participants: [user.employeeId, employeeId]
+    participants: [user?.employeeId, employeeId]
   }));
-}, [user?.employeeId, employeeId]);
+}, [employeeId, user]);
 
   // ✅ Adjust input area for mobile keyboard
   useEffect(() => {
@@ -104,18 +112,16 @@ function LiveChats() {
   // ✅ Socket + Fetch conversation
 useEffect(() => {
   if (!convInfo.participants || convInfo.participants.length !== 2) return;
-  if (!user?.employeeId) return;
 
   const loadChat = async () => {
     try {
       const { data } = await Altaxios.post('/conversation/newConverSation', convInfo);
 
-      setConversation(data.conversation);
+      setConversation(data?.conversation);
       setMessages(data.messages || []);
 
-      // join the conversation room
       socket.emit("joinConversation", {
-        conversationId: data.conversation._id
+        conversationId: data?.conversation?._id
       });
     } catch (err) {
       console.error("Failed to load conversation:", err);
@@ -124,23 +130,53 @@ useEffect(() => {
 
   loadChat();
 
-  // listen for incoming messages
+}, [convInfo, user?.employeeId]);
+
+
+useEffect(() => {
+if (!user?.employeeId) return;
   socket.on("newMessage", (msg) => {
     setMessages((prev) => [...prev, msg]);
 
-    if (msg.senderId !== user.employeeId) {
-      setLastMessage(msg.content || "New message");
+    if (msg?.senderId !== user?.employeeId) {
+      setLastMessage(msg?.content || "New message");
       setIsPopup(true);
       clearTimeout(popupTimerRef.current);
       popupTimerRef.current = setTimeout(() => setIsPopup(false), 5000);
     }
-  });
 
+  if (msg?.senderId !== user?.employeeId) {
+    socket.emit("message:delivered", {
+      messageIds: [msg._id],
+      employeeId: user?.employeeId,
+      conversationId: conversation?._id
+    });
+  }
+  });
   return () => {
     socket.off("newMessage");
   };
-}, [convInfo, user.employeeId]);
+},[user?.employeeId, conversation?._id]);
 
+useEffect(() => {
+  if(open && !minimized){
+  const unseenMessageIds = messages
+    .filter(m => !m.seenBy?.includes(user?.employeeId) && m.senderId !== user?.employeeId)
+    .map(m => m._id);
+  if (unseenMessageIds.length) {
+    socket.emit("message:seen", { messageIds: unseenMessageIds, employeeId: user?.employeeId, conversationId: conversation?._id, });
+  }
+}
+}, [messages, user?.employeeId, open, minimized, conversation?._id]);
+
+useEffect(() => {
+  socket.on("userTyping",({isTyping}) => {
+      setIsTypingStart(isTyping);
+  });
+  return () => {
+    socket.off("userTyping");
+  };
+},[]);
   // ✅ Scroll to bottom on new message
   const scrollToBottom = useCallback(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -150,11 +186,43 @@ useEffect(() => {
     scrollToBottom();
   }, [messages, open, minimized, scrollToBottom]);
 
+  useEffect(() => {
+socket.on("messageDelivered", ({ messageIds, employeeId }) => {
+  setMessages(prev =>
+    prev.map(msg =>
+      messageIds.includes(msg._id)
+        ? { 
+            ...msg, 
+            deliveredTo: [...new Set([...(msg.deliveredTo || []), employeeId])]
+          }
+        : msg
+    )
+  );
+});
+
+socket.on("messageSeen", ({ messageIds, employeeId }) => {
+  setMessages(prev =>
+    prev.map(msg =>
+      messageIds.includes(msg._id)
+        ? { 
+            ...msg, 
+            seenBy: [...new Set([...(msg.seenBy || []), employeeId])]
+          }
+        : msg
+    )
+  );
+});
+  return () => {
+    socket.off("messageDelivered");
+    socket.off("messageSeen");
+  };
+}, []);
+
   // ✅ Send message
 const sendMessage = async () => {
   if (!message.trim()) return;
   socket.emit("sendMessage", {
-    conversationId: conversation._id,
+    conversationId: conversation?._id,
     senderId: user?.employeeId,
     messageType: "text",
     content: message
@@ -169,21 +237,33 @@ const sendMessage = async () => {
     sendMessage(file);
   };
 
-  const formatTimestamp = (timestamp) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const minutesDiff = differenceInMinutes(now, date);
-    const hoursDiff = differenceInHours(now, date);
-    const daysDiff = differenceInDays(now, date);
-    const monthsDiff = differenceInMonths(now, date);
-    const yearsDiff = differenceInYears(now, date);
-    if (minutesDiff < 1) return 'just now';
-    if (minutesDiff < 60) return `${minutesDiff} min ago`;
-    if (hoursDiff < 24) return `${hoursDiff} hr ago`;
-    if (daysDiff < 30) return `${daysDiff} days ago`;
-    if (monthsDiff < 12) return `${monthsDiff} months ago`;
-    return `${yearsDiff} yrs ago`;
-  };
+  const formatMessageDate = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const diffTime = now - date;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) {
+    return date.toLocaleDateString("en-US", { weekday: "long" });
+  }
+
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatMessageTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
   const toggleChat = () => {
     setOpen((o) => !o);
@@ -191,6 +271,28 @@ const sendMessage = async () => {
     setIsPopup(false);
   };
 
+  const typeingMessage = (e) => {
+    setMessage(e.target.value);
+    socket.emit("typing",{
+    conversationId: conversation?._id,
+    employeeId: user?.employeeId, 
+    isTyping:true
+    });
+
+    if(typingTimeManageRef.current){
+      clearTimeout(typingTimeManageRef.current);
+    }
+
+    typingTimeManageRef.current = setTimeout(() => {
+      socket.emit("typing",{
+      conversationId: conversation?._id,
+      employeeId: user?.employeeId, 
+      isTyping:null
+      });
+    },1500);
+  };
+  
+  console.log(conversation);
   return (
     <div className="liveChatsMain">
       {!open && (
@@ -208,15 +310,15 @@ const sendMessage = async () => {
       {open && (
         <div className={`liveChatsInnerPart ${minimized ? 'minimized' : ''}`} ref={innerRef}>
           <div className="liveConverstaionHeder">
-            {user.employeeProfile ? (
-              <img src={user.employeeProfile} alt="employee" style={{width:'28px',height:'27px',borderRadius:'50%'}}/>
+            {employeeData?.EmplyeeProfile ? (
+              <img src={employeeData?.EmplyeeProfile} alt="employee" style={{width:'28px',height:'27px',borderRadius:'50%'}}/>
             ) : (
               <SupportAgentIcon className="liveConversationAvater" />
             )}
             <div className="liveChatHeaderLive"></div>
-            <span className="supportagettext">{user.employeeName ?? "Employee"}</span>
-            <CallIcon className='liveSectionAudioCallIcon' onClick={() => {startCall("audio")}}/>
-            <VideoCallIcon className='liveSectionVidioCallIcon' onClick={() => {startCall("video")}}/>
+            <span className="supportagettext">{employeeData?.YemplyeeName ?? "Employee"}</span>
+            <CallIcon className='liveSectionAudioCallIcon' onClick={() => {startCall("audio", user?.employeeName, user?.employeeProfile, employeeData?.YemplyeeName, employeeData?.EmplyeeProfile)}}/>
+            <VideoCallIcon className='liveSectionVidioCallIcon' onClick={() => {startCall("video", user?.employeeName, user?.employeeProfile, employeeData?.YemplyeeName, employeeData?.EmplyeeProfile)}}/>
             {minimized ? (
               <KeyboardArrowUpOutlinedIcon onClick={() => setMinimized((m) => !m)} className="toggleMinimizebtn" />
             ) : (
@@ -228,36 +330,94 @@ const sendMessage = async () => {
           {!minimized && (
             <>
               <div className="liveCustomerMessages">
-                {messages.map((msg) => (
+                {messages.map((msg, index) => {
+                  const currentDate = formatMessageDate(msg.createdAt);
+                  const prevMessage = messages[index - 1];
+                  const nextMessage = messages[index + 1];
+                  const prevDate = prevMessage
+                    ? formatMessageDate(prevMessage.createdAt)
+                    : null;
+                  const showDate = currentDate !== prevDate;
+                  const isMine = msg?.senderId === user?.employeeId;
+              const isLastFromSender = (!nextMessage || nextMessage.senderId !== msg.senderId);
+                const showAvatar = !isMine && isLastFromSender;
+                const isLast = index === messages.length - 1;
+
+                  const totalParticipants = conversation.participants
+                  .filter(p => p.employeeId !== user.employeeId)
+                  .length;
+                            console.log(totalParticipants);
+                  const deliveredCount = msg.deliveredTo?.length || 0;
+                  const seenCount = msg.seenBy?.length || 0;
+                  let messageStatus = "sent";
+                  if (deliveredCount > 0) {
+                    messageStatus = "delivered";
+                  }
+                  if (seenCount === totalParticipants) {
+                    messageStatus = "seen";
+                  }
+
+                  return(
+                    <React.Fragment key={msg?._id}>
+                  {showDate && (
+                    <div className="chatDateSeparator">
+                      {currentDate}
+                    </div>
+                  )}
+
                   <div
-                    key={msg._id}
                     className={`${
-                      msg.senderId === user.employeeId ? 'liveCustomerMessagesCustomer' : 'liveCustomerMessagesAgent'
+                      isMine ? 'liveCustomerMessagesCustomer' : 'liveCustomerMessagesAgent'
                     }`}
+                          style={{
+                          marginBottom: !isMine && isLast && isTypingStart ? "25px" : "4px",
+                        }}
+
                   >
-                    {msg.messageType === "image" && (
+                    {showAvatar && employeeData && (
                       <img
-                        src={msg.mediaUrl}
+                        src={employeeData?.EmplyeeProfile}
+                        alt={employeeData?.YemplyeeName}
+                        className="chatAvatar"
+                      />
+                    )}
+                    <div className='message_containerInner'>
+                    {msg?.messageType === "image" && (
+                      <img
+                        src={msg?.mediaUrl}
                         alt="msg"
                         className="liveCustomerMessagesImage"
                         onLoad={() => setIsImageLoaded(true)}
                       />
                     )}
-                    {msg.messageType === "text" && (
+                    {msg?.messageType === "text" && (
                       <div
                         className={`liveCustomerMessagesText ${
-                          msg.senderId === user.employeeId ? 'liveAgentMessage' : ''
+                          isMine ? 'liveAgentMessage' : ''
                         }`}
                       >
-                        {msg.content}
+                        {msg?.content}
                       </div>
                     )}
-                    <div className="liveCustomerMessagesTime">{formatTimestamp(msg.createdAt)}</div>
+                    <div className='messageInnerTimeAndStatus'>
+                      <div className="liveCustomerMessagesTime">
+                        {formatMessageTime(msg?.createdAt)}
+                      </div>
+                      {isMine && (
+                      <div className="liveCustomerMessagesStatus">
+                        {messageStatus === "sent" && <SentIcon />}
+                        {messageStatus === "delivered" && <DeliveredIcon />}
+                        {messageStatus === "seen" && <SeenIcon />}
+                      </div>
+                    )}
+                    </div>
                   </div>
-                ))}
+                  </div>
+                  </React.Fragment>
+                )})}
                 <div ref={endRef} />
               </div>
-
+                {isTypingStart && <TypingIndicator />}
               <div className="liveConverstaionFooter">
                 <label className="liveChatfileInput">
                   <input type="file" onChange={handleFileChange} />
@@ -266,9 +426,10 @@ const sendMessage = async () => {
                 <input
                   type="text"
                   className="liveConverstaionInput"
+                  name="userInputText"
                   value={message}
                   placeholder="Type a message..."
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={typeingMessage}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && message.trim()) {
                       e.preventDefault();
@@ -283,30 +444,35 @@ const sendMessage = async () => {
               </div>
             </>
           )}
-                {/* Incoming Call Prompt */}
-                <IncomingCallPopup
-                  incoming={webrtc.incomingCall}
-                  onAccept={webrtc.acceptCall}
-                  onReject={webrtc.rejectCall}
-                />
-          
-                {/* In-Call Floating View */}
-                {webrtc.isInCall && webrtc.localStream && (
-                  <CallFloatingView
-                    localRef={webrtc.localVideoRef}
-                    getRemoteRef={webrtc.getRemoteRef}
-                    remoteStreams={webrtc.remoteStreams}
-                    onEnd={webrtc.endCall}
-                    onMic={webrtc.toggleMic}
-                    onCam={webrtc.toggleCam}
-                    onScreen={webrtc.toggleScreenShare}
-                    micOn={webrtc.micOn}
-                    camOn={webrtc.camOn}
-                    screenOn={webrtc.screenOn}
-                    formattedTimer={webrtc.formattedTimer}
-                  />
-                )}
-        </div>
+
+
+{webrtc.call.state === "RINGING" && (
+  <IncomingCallPopup
+    incoming={webrtc.call}
+    localVideoinRemote={webrtc.localVideoinRemote} // show callee preview
+    onAccept={webrtc.acceptCall}
+    onReject={webrtc.rejectCall}
+  />
+)}
+
+  <CallFloatingView
+   callingState={webrtc.call.state}
+    localVideoRef={webrtc.localVideoRef}
+    localVideoinCalling={webrtc.localVideoinCalling}
+    remoteVideoEls={webrtc.remoteVideoEls}
+    remoteStreams={webrtc.remoteStreams}
+    endCall={webrtc.endCall}
+    toggleMic={webrtc.toggleMic}
+    toggleCam={webrtc.toggleCam}
+    toggleScreenShare={webrtc.toggleScreenShare}
+    micOn={webrtc.micOn}
+    camOn={webrtc.camOn}
+    screenOn={webrtc.screenOn}
+    formattedTimer={webrtc.formattedTimer}
+    onReject={webrtc.rejectCall}
+    callerData={webrtc.callerData}
+  />
+</div>
         
       )}
     </div>

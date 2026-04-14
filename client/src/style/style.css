@@ -283,7 +283,7 @@ body{
     display: none;
 }
 .toggleUserCard{
-    left: -134px;
+    left: -144px;
     display: flex;
 }
 .profileNameAndlogo{
@@ -661,6 +661,33 @@ body{
     margin-bottom: 50px;
     overflow: hidden;
 }
+.live_msg_and_salse{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 50px;
+    position: relative;
+    margin-top: 35px;
+}
+.live_message_main{
+    width: 600px;
+    height: 130px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+}
+.live_salse_main{
+    width: 600px;
+    height: 130px;
+    border: 1px solid #ccc3;
+    border-radius: 10px;
+}
+.gruopNameAndLogo{}
+.gruopNameAndLogo>img{}
+.gruopNameAndLogo>h3{}
+.groupNotificatin_view{}
 .AddEmployeeMainPage{
     display: flex;
     width: 100%;
@@ -4421,7 +4448,7 @@ border-color: #85858563;
 
     /* client Addproduct </> */
 /* Employee Status update<> */
-.userStatusScrollingMain{}
+/* .userStatusScrollingMain{} */
 .previewStatusContainer{
     width: 220px;
     height: auto;
@@ -4669,12 +4696,6 @@ border-color: #85858563;
     border: 1px solid rgb(50, 49, 48);
     transition: bottom 150ms ease;
 }
-.inActiveLiveChantsendbtn{
-    user-select: none !important;
-    color: #00aaff45 !important;
-    pointer-events: none;
-    cursor: not-allowed !important;
-}
 .liveChatsInnerPart.minimized{
     height: auto;
 }
@@ -4735,39 +4756,461 @@ border-color: #85858563;
     box-sizing: border-box;
     position: relative;
     background: #011626;
+    display: flex;
+    flex-direction: column;
 }
 .liveCustomerMessages::-webkit-scrollbar{
     display: none;
 }
+
+
 .liveCustomerMessagesCustomer,
 .liveCustomerMessagesAgent{
-    width: 100%;
-    height: auto;
-    padding: 5px;
-    margin-bottom: 10px;
+    max-width: 80%;
+    margin-bottom: 4px;
     display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
+    position: relative;
     flex-direction: column;
 }
-.liveCustomerMessagesAgent{
-    align-items: flex-start;
+
+.liveCustomerMessagesAgent {
+     align-self: flex-start;
 }
-.liveCustomerMessagesImage{
-    width: 200px;
+.liveCustomerMessagesAgent:nth-last-child{
+    margin-bottom: 30px;
+}
+.liveCustomerMessagesCustomer {
+       align-self: flex-end;
+}
+.message_containerInner{
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background: #5ab8ff0f;
+}
+.innerChatImageContainer{
+    width: 100%;
+    height: 220px;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: flex-start;
+    gap: 10px;
+}
+.senderName{
+    font-size: 8px;
+    top: -12px;
+    left: 1px;
+    color: #ccccccad;
+    margin: 10px 0px 2px 10px;
+    align-self: self-start;
+}
+.chatAvatar {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    bottom: -14px;
+    left: -8px;
+    object-fit: cover;
+}
+
+/* Preview Container */
+.preview-container {
+    width: 300px;
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding: 8px;
+    border: 1px solid #dddddd52;
+    max-width: 100%;
+    scroll-behavior: smooth;
+    position: fixed;
+    bottom: 50px;
+    border-radius: 10px;
+    background: #011626;
+}
+
+/* Hide scrollbar (optional) */
+.preview-container::-webkit-scrollbar {
+    display: none;
+  height: 6px;
+}
+
+.preview-container::-webkit-scrollbar-thumb {
+  background: #ccccccc4;
+  border-radius: 10px;
+}
+
+/* Each Preview Item */
+.preview-item {
+  position: relative;
+  min-width: 50px;
+  height: 50px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Image Preview */
+.preview-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+/* File Box (PDF/DOC/etc) */
+.file-box {
+  width: 50px;
+  height: 50px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+/* Remove Button */
+.remove-btn {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: red;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Add More Button */
+.add-btn {
+  min-width: 50px;
+  height: 50px;
+  border: 2px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: #888;
+  flex-shrink: 0;
+  transition: 0.2s ease;
+}
+
+.add-btn:hover {
+  border-color: #0af;
+  color: #0af;
+}
+/* RIGHT SIDE (Agent) */
+
+/* MEDIA GRID */
+.mediaGrid {
+  display: grid;
+  gap: 4px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 280px;
+}
+
+/* 1 IMAGE */
+.mediaCount_1 {
+  grid-template-columns: 1fr;
+}
+
+/* 2 IMAGES */
+.mediaCount_2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 3 IMAGES */
+.mediaCount_3 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 4+ IMAGES */
+.mediaCount_4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mediaItem {
+  position: relative;
+  cursor: pointer;
+}
+.mediaItem:has(.previewDownlaodFile){
+    cursor:default;
+}
+
+.mediaItem img,
+.mediaItem video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fileDocsSeperator{
+    margin:10px 0px;
+    border:1px solid #ccc3;
     border-radius: 5px;
+    padding: 3px;
+    
+    .filedownloadIcon{
+        margin-right: 5px;
+    }
+}
+
+/* FILE PREVIEW */
+.filePreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: #333;
+  color: white;
+  font-size: 14px;
+  padding: 10px;
+  text-align: center;
+}
+
+/* +MORE OVERLAY */
+.mediaOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MODAL */
+.mediaModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.mediaModalContent img,
+.mediaModalContent video {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 10px;
+}
+
+.mediaModalTopBar {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+
+.downloadBtn {
+  background: #00a884;
+  border: none;
+  padding: 8px 14px;
+  color: white;
+  font-size: 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.downloadBtn:hover {
+  background: #008f72;
+}
+
+.closeBtn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  padding: 8px 12px;
+  color: white;
+  font-size: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
+.filePreviewBig {
+  background: #222;
+  padding: 40px;
+  color: white;
+  border-radius: 10px;
+}
+.previewDownlaodFile{
+    width: 214px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+    color: white;
+    font-size: 14px;
+    text-align: center;
+}
+.iconsforFiles{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+.iconsforFiles>img{
+    width: 40px;
+    height: 40px;
+}
+.fileInnerText{
+    font-size: 13px;
+    margin-top: 8px;
+    font-family: auto;
+    color: #ccc;
+}
+.filedownloadIcon{
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border: 1px solid #b17f00;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px;
+}
+.filedownloadIcon>svg{
+    font-size: 20px;
+    cursor: pointer;
+    color: #b17f00;
+}
+
+.pdfpopUPshow{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background: #0000008c;
+    width: 100%;
+    height: 100%;
+    color: rgb(203 203 203);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 45px;
+    z-index: 1;
+    cursor: pointer;
 }
 .liveCustomerMessagesText{
     font-size: 13px;
-    color: #ccc;
+    color: #ffffffc7;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    word-wrap: break-word;
 }
 .liveAgentMessage{
     color: #00fff2;
+}
+.chatDateSeparator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    font-size: 12px;
+    color: #8aa0b6;
+}
+
+.chatDateSeparator::before,
+.chatDateSeparator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.chatDateSeparator span {
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+}
+
+
+.uploadProgressWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 2px 14px 6px;
+  gap: 3px;
+}
+
+.uploadProgressTrack {
+    position: relative;
+    width: 80%;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.uploadProgressFill {
+    width: 100%;
+    transition: width 0.2s ease, background 0.3s ease;
+    height: 50px;
+    border-radius: 5px;
+    background-color: #cccccc36;
+    position: relative;
+    text-align: center;
+}
+.uloadPrgressFillinner{
+    height: 50px;
+    border-radius: 5px;
+    background-color: #00fff291;
+    transition: width 0.2s ease, background 0.3s ease;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.uploadProgressLabel {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.liveCustomerMessages .chatDateSeparator:first-of-type {
+    margin-top: 0;
+}
+.messageInnerTimeAndStatus{
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
 }
 .liveCustomerMessagesTime{
     font-size: 9px;
     color: #cccccc8f;
     padding-top: 5px;
+    margin-right: 35px;
+}
+.liveCustomerMessagesStatus{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0px;
+    right: -6px;
+}
+.liveCustomerMessagesStatus>svg{
+    font-size: 13px !important;
+    color: #ffffffd7;
 }
 .liveConverstaionFooter{
     padding: 10px;

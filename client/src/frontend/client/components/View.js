@@ -8,6 +8,7 @@ import {Altaxios} from '../../Altaxios';
 import { Link } from 'react-router-dom';
 import './view.css';
 import { makeDemoPoints } from "./demoPoints";
+import AddIcon from '@mui/icons-material/Add';
 
 const View = () => {
   const [Alldata,setAllDatas] = useState([]);
@@ -93,7 +94,16 @@ const View = () => {
             </div>  
             ))
             : 
-            (<h1>You have any goal</h1>)
+            (
+                <div className='ProductAddInner' style={{height:'225px'}}>
+                  <Link to="/settarget">
+                  <div className='PorductAddInnerContainer'>
+                    <h4>Add Product</h4>
+                    <AddIcon/>
+                  </div>
+                  </Link>
+                </div>
+                )
           }
           </div>
         </div>

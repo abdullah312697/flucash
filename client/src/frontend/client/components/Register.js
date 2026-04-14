@@ -22,7 +22,7 @@ function Register() {
       const preview = useRef(null);
       const [emplyeeProfile,setEmplyeeProfile] = useState(null);
       const { register } = useAuth();
-
+  console.log(emplyeeProfile);
     // const fbc = handleFbclidCookie();
   // fbc click id</>
 
@@ -100,7 +100,7 @@ const submitRegistation = async () => {
 
   try {
     const CompanyData = new FormData();
-    CompanyData.append("file", emplyeeProfile);
+    CompanyData.append("files", emplyeeProfile);
     CompanyData.append("companyName", userdata.companyName);
     CompanyData.append("industry", userdata.industry);
     CompanyData.append("numberofEmployees", userdata.numberofEmployees);
@@ -109,9 +109,8 @@ const submitRegistation = async () => {
     CompanyData.append("rePassword", userdata.rePassword);
     CompanyData.append("verifyCode", userdata.verifyCode);
 
-    // ⬅⬅ FIXED — MUST USE AWAIT
     const res = await register(CompanyData);
-
+    console.log(res);
     // Success message
     setResMessage(res.data.message);
     setResMsgStyle({ color: "green", opacity: 1, marginTop: "15px" });
@@ -172,9 +171,9 @@ if(inVisible){
 //preview photos  start
 const uploadReviewPhotos = (e) => {
   preview.current.innerHTML = "";
-  let files = e.currentTarget.files[0];
-  if(files){
-    setEmplyeeProfile(files);
+  let file = e.currentTarget.files[0];
+  if(file){
+    setEmplyeeProfile(file);
   function readAndPreview(file) {
     if (/\.(jpe?g|png|gif)$/i.test(file.name)) {
       const reader = new FileReader();
@@ -193,7 +192,7 @@ const uploadReviewPhotos = (e) => {
   
     }
   }
-  readAndPreview(files);
+  readAndPreview(file);
   }
 }
 //preview photos  end

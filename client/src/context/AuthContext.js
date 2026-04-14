@@ -7,35 +7,20 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mustVerifyEmail, setMustVerifyEmail] = useState(false);
-  // Validate logged-in user when app loads or refreshes
 
   useEffect(() => {
   const checkLogin = async () => {
     setLoading(true);
-    setMustVerifyEmail(false);
-    try {
-      // make sure Altaxios sends cookies (or configure globally)
+    try{
       const res = await Altaxios.get("/users/vefiryUsersLog");
-      // backend returns { message, AccessData: { ... } }
       const access = res.data?.AccessData;
-
-      // store only the AccessData shape you expect
       setUser(access);
-      setMustVerifyEmail(true);
     } catch (err) {
-      // if server responded with a message, handle it specially
-      if (err?.response?.data?.message === "Verify your email") {
-        setUser("Verify your email");
-        setMustVerifyEmail(false);
-      } else {
-        setUser("Verify your email");
-        setMustVerifyEmail(false);
-      }
-    } finally {
+      console.log(err);
+    }finally{
       setLoading(false);
     }
-  };
+  }
 
   checkLogin();
 }, []);
@@ -63,6 +48,17 @@ const register = async (companyData) => {
   return res; // return full axios response
 };
 
+const emailVerify = async (verifyCode) => {
+    const response = await Altaxios.post("/users/verifyCode", {
+      verifyCode,
+    });
+
+  // store user access data
+  setUser(response.data.AccessData);
+
+  return response; // return full axios response
+};
+
   // LOGOUT
   const logout = async () => {
     try {
@@ -77,7 +73,11 @@ const register = async (companyData) => {
 
   const updateEmployee = async (employeeId,employeeData) => {
       const updEmployee = await Altaxios.put(`/newemplyee/updateEmployee/${employeeId}`,employeeData);
-      setUser(updEmployee.data.AccessData);
+      const currentUser = user?.employeeId;
+      const updatedEmployee = updEmployee.data.AccessData
+      if(currentUser === updatedEmployee.employeeId){
+        setUser(updatedEmployee);
+      }
       return updEmployee;
   };
 
@@ -89,14 +89,19 @@ const register = async (companyData) => {
         },
       }
     );
-      setUser(updEmployeeProfile.data.AccessData);
+      const currentUser = user?.employeeId;
+      const updatedEmployee = updEmployeeProfile.data.AccessData;
+      if(currentUser === updatedEmployee.employeeId){
+        setUser(updatedEmployee);
+      }
+
       return updEmployeeProfile;
   };
 
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, mustVerifyEmail, updateEmployee, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, emailVerify, updateEmployee, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

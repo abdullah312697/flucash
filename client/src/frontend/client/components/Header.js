@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
@@ -13,6 +13,51 @@ function Header() {
   const [isDesktopUserCardOpen, setIsDesktopUserCardOpen] = useState(false);
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const menuBtnRef = useRef(null);  
+  const CardMobile = useRef(null);
+      const [isMenuOpen, setIsMenuOpen] = useState(false);
+      useEffect(() => {
+        function handleClickOutside(e) {
+          // if click is outside *all* of these, close everything
+          // if (
+          //   menuBtnRef.current?.contains(e.target)    ||
+          //   CardBtnRef.current?.contains(e.target)  ||
+          //   CardMobile.current?.contains(e.target)
+          // ) {
+          //   return
+          // }
+          if (
+            menuBtnRef.current?.contains(e.target)
+          ) {
+            setIsDesktopUserCardOpen(false);
+          }else if (
+            CardBtnRef.current?.contains(e.target)
+          ){
+            setIsMenuOpen(false);
+          }else if(
+            CardMobile.current?.contains(e.target)
+          ){
+            setIsDesktopUserCardOpen(false);     
+            setIsMenuOpen(false);
+          }else{
+            setIsMenuOpen(false);
+            setIsDesktopUserCardOpen(false);
+          }
+  }
+    
+        function handleScroll() {
+          setIsMenuOpen(false);
+          setIsDesktopUserCardOpen(false);
+      }
+    
+        document.addEventListener('click', handleClickOutside);
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+          document.removeEventListener('click', handleClickOutside);
+          window.removeEventListener('scroll', handleScroll);
+        };
+      }, []);
+  
   const handleLogout = async () => {
     const ok = await logout(); // AuthContext handles redirect
     if (ok) navigate("/login");
@@ -94,7 +139,7 @@ function Header() {
                   )}
 
                   {/* Greeting */}
-                  {!!user?.companyName ? (
+                  {!user?.companyName ? (
                     <div className="unLogUserinCard">
                       <h2 className="userNameinCard">Dear User,</h2>
                       <h2 className="userMessageInCard">Login or Register Please! 👇🏼</h2>
@@ -130,11 +175,11 @@ function Header() {
         {/* ======================= MOBILE HEADER ======================= */}
         <div className="mobile_header">
           <div className="mobileNavbutton">
-            <MenuIcon onClick={closeMenu} />
+            <MenuIcon onClick={closeMenu} ref={menuBtnRef}/>
           </div>
 
           {/* MOBILE MENU */}
-          <div className="mobile_menu">
+          <div className= {`mobile_menu ${isMenuOpen ? 'mobile_menuToggle' : ''}`}>
             <CloseIcon onClick={closeMenu} />
 
             <div className="pagesLink">

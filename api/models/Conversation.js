@@ -20,7 +20,16 @@ const conversationSchema = new Schema({
   lastMessage: {
     messageId: { type: Schema.Types.ObjectId, ref: "Message" },
     text: { type: String },
-    sentAt: { type: Date }
+    senderId:{type: String},
+    sentAt: { type: Date },
+    messageType: {type:String},
+    media: [
+              {
+                mediaUrl: String,
+                cloudinaryPublicId: String,
+                messageType: String
+              }
+           ],
   }
 }, { timestamps: true });
 

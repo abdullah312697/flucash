@@ -21,12 +21,10 @@ export const SocketProvider = ({ children }) => {
     socket.on("connect_error", (err) => {
   console.error("SOCKET ERROR:", err.message);
 });
-
     return () => {
       socket.off("connect");
       socket.off("disconnect");
     };
-
   }, []);
 
   return (

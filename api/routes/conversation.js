@@ -6,6 +6,7 @@ import Conversation from "../models/Conversation.js";
 import{decryptUserData} from '../verifyuser.js';
 // import authMiddleware if you have one that sets req.companyId
 import mongoose from "mongoose";
+
 import Message from "../models/Message.js";
 
 const router = express.Router();
@@ -30,35 +31,36 @@ function getSessionIdsFromReq(req) {
 
 router.post("/newConverSation", async (req, res) => {
   try {
-    const { companyId } = req.cookies;
+    const { companyId, employeeId } = req.cookies;
     if (!companyId) return res.status(401).json({ message: "Unauthorized" });
     const companyIdDecripted = decryptUserData(companyId);
-
-    const { type = "private", participants = [], title = "", avatar = "" } = req.body;
+    const userIdDecripted = decryptUserData(employeeId);
+    
+    const { type = "", participants = [], title = "", avatar = "" } = req.body;
     if (!Array.isArray(participants) || participants.length === 0) {
       return res.status(400).json({ message: "participants array required" });
     }
-
     // ensure all participant ids are valid ObjectIds
     const normalized = participants.map(id =>
   mongoose.Types.ObjectId.createFromHexString(id)
 );
+
+
     if (type === "private") {
       if (normalized.length !== 2) {
         return res.status(400).json({ message: "Private conversation requires exactly 2 participants" });
       }
 
-      // Look for existing private conversation between these two in same company
-      // Using set comparison: find conversation where participants contain both IDs and type=private
-      const existing = await Conversation.findOne({
-        companyId: companyIdDecripted,
-        type: "private",
-        $and: [
-          { "participants.employeeId": normalized[0] },
-          { "participants.employeeId": normalized[1] }
-        ]
-      });
-
+        const existing = await Conversation.findOne({
+          companyId: companyIdDecripted,
+          type: "private",
+          participants: {
+            $all: [
+              { $elemMatch: { employeeId: normalized[0] } },
+              { $elemMatch: { employeeId: normalized[1] } }
+            ]
+          }
+        });
       if (existing){
          const messages = await Message.find({
           conversationId: existing._id,
@@ -75,7 +77,7 @@ router.post("/newConverSation", async (req, res) => {
       const partDocs = normalized.map((empId, idx) => ({
         employeeId: empId,
         role: "member",
-        joinedAt: Date.now()
+        joinedAt: new Date()
       }));
 
       const convo = await Conversation.create({
@@ -91,19 +93,60 @@ router.post("/newConverSation", async (req, res) => {
     // GROUP chat creation
     // make sure at least one admin (the creator)
     // if creator isn't included, add them as admin
-    const creatorEmployeeId = req.body.creatorEmployeeId || req.body.creator || null; // optional if you pass it
-    const creator = creatorEmployeeId ? mongoose.Types.ObjectId(creatorEmployeeId) : null;
+const existing = await Conversation.findOne({
+    companyId: companyIdDecripted,
+    type: "group",
+  }).lean();
 
-    const uniqueParticipantIds = Array.from(new Set(normalized.map(String))).map(id => mongoose.Types.ObjectId(id));
-    if (creator && !uniqueParticipantIds.find(x => String(x) === String(creator))) {
-      uniqueParticipantIds.unshift(creator);
+  if (existing) {
+    const existingIds = new Set(existing.participants.map(p => String(p.employeeId)));
+    const filtered = normalized.filter(id => !existingIds.has(String(id)));
+
+    if (filtered.length > 0) {
+      const ops = filtered.map(empId => ({
+        updateOne: {
+          filter: { _id: existing._id, "participants.employeeId": { $ne: empId } },
+          update: {
+            $push: {
+              participants: { employeeId: empId, role: "member", joinedAt: new Date() }
+            }
+          }
+        }
+      }));
+
+      await Conversation.bulkWrite(ops);
     }
 
+    const [updatedConversation, messages] = await Promise.all([
+      Conversation.findById(existing._id).lean(),
+      Message.find({ conversationId: existing._id, companyId: companyIdDecripted })
+               .sort({ createdAt: 1 }).lean(),
+    ]);
+
+    return res.status(200).json({ conversation: updatedConversation, messages });
+  }
+        const creatorEmployeeId = String(userIdDecripted); // optional if you pass it
+
+const creator = mongoose.Types.ObjectId.isValid(creatorEmployeeId)
+  ? new mongoose.Types.ObjectId(creatorEmployeeId)
+  : null;
+
+    const uniqueParticipantIds = [...new Map(normalized.map(id => [String(id), id])).values()];
+    if (!creator) {
+  return res.status(400).json({ message: "Invalid creator ID" });
+}
+
+if (
+  creator &&
+  !uniqueParticipantIds.some(x => x.equals(creator))
+) {
+  uniqueParticipantIds.unshift(creator);
+}
     // build participant docs: first one -> admin
     const parts = uniqueParticipantIds.map((empId, idx) => ({
       employeeId: empId,
       role: idx === 0 ? "admin" : "member",
-      joinedAt: Date.now()
+      joinedAt: new Date()
     }));
 
     const groupConvo = await Conversation.create({
@@ -240,7 +283,7 @@ router.post("/:conversationId/participants", async (req, res) => {
     const already = convo.participants.find(p => String(p.employeeId) === String(employeeId));
     if (already) return res.status(400).json({ message: "Participant already in conversation" });
 
-    convo.participants.push({ employeeId, role, joinedAt: Date.now() });
+    convo.participants.push({ employeeId, role, joinedAt: new Date() });
     await convo.save();
 
     return res.status(200).json({ message: "Participant added", conversation: convo });

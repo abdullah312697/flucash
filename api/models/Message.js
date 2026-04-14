@@ -7,12 +7,17 @@ const messageSchema = new Schema({
   conversationId: { type: Schema.Types.ObjectId, ref: "Conversation", required: true },
   senderId: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
 
-  messageType: { type: String, enum: ["text", "image", "file", "audio", "video"], default: "text" },
+  messageType: { type: String, enum: ["text","image","video","audio","pdf","word","excel","powerpoint","archive","file"], default: "text" },
   content: { type: String, default: "" },
 
-  mediaUrl: { type: String, default: "" },
-  cloudinaryPublicId: { type: String, default: "" },
-
+  media: [
+  {
+    mediaUrl: String,
+    cloudinaryPublicId: String,
+    messageType: String,
+    fullName: String
+  }
+],
   status: {
     type: String,
     enum: ["sent", "delivered", "seen"],

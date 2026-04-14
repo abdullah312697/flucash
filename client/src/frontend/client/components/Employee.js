@@ -24,7 +24,7 @@ function Employee() {
     const [isPorfielEnable,setIsProfileEnable] = useState(false);
     const [isOpend,setIsOpend] = useState(false);
     const [isUserScroll,setIsUserScroll] = useState(true);
-    const {updateEmployee, updateProfile} = useAuth();
+    const {updateEmployee, updateProfile, user} = useAuth();
       const [emplyeeAddDataNew,setEmployeeDataNew] = useState({
         YemplyeeName:"",
         YemplyeePhone:"",
@@ -136,10 +136,10 @@ const indexVal = mainStaus(employeeData?.EmployeeProfileStatus ?? ActiveStauts);
     };
   },[isOpenPassword]);
 
-  useEffect(() => {
-  const EmptyResult = Object.values(emplyeeAddDataNew).some(v => v == null || (typeof v === "string" && v.trim() === ""));
-  setIsFullData(EmptyResult);
-}, [emplyeeAddDataNew]);
+//   useEffect(() => {
+//   const EmptyResult = Object.values(emplyeeAddDataNew).some(v => v == null || (typeof v === "string" && v.trim() === ""));
+//   setIsFullData(EmptyResult);
+// }, [emplyeeAddDataNew]);
 
     const handleScroll = () => {
       const indexVal = mainStaus(employeeData?.EmployeeProfileStatus ?? ActiveStauts);
@@ -192,6 +192,7 @@ const uploadReviewPhotos = (e) => {
       ...emplyeeAddDataNew,
       [name] : value
     });
+    setIsFullData(false)
   };
 
 
@@ -204,7 +205,7 @@ const uploadReviewPhotos = (e) => {
       if(adEmplyees.status === 200){
         setResMessageinDelete(adEmplyees.data.message);
         const newEmployee = adEmplyees.data.data;
-        setResMsgStyleinDelete({color:"green",opacity:1,marginTop:"15px"});
+        setResMsgStyleinDelete({color:"green",opacity:1,marginTop:"15px",marginBottom:'10px'});
         setEmployeeDataNew({
             YemplyeeName: newEmployee.YemplyeeName,
             YemplyeePhone: newEmployee.YemplyeePhone,
@@ -220,23 +221,29 @@ const uploadReviewPhotos = (e) => {
             employeeAccessPassword: newEmployee.employeeAccessPassword,
             EmployeeProfileStatus: newEmployee.EmployeeProfileStatus
         });
+        setEmployeeData((prevData) => {
+          return{
+            ...prevData,
+            YemplyeeName: newEmployee.YemplyeeName
+          }
+        });
       setTimeout(() => {
-          setResMsgStyleinDelete({opacity:0,marginTop:"0px"});
+          setResMsgStyleinDelete({opacity:0,marginTop:"0px",marginBottom:'0px'});
       },3000);
      }
     }catch(error){
       if(error.response){
       setResMessageinDelete(error.response.data.message);
-      setResMsgStyleinDelete({color:"red",opacity:1,marginTop:"15px",})
+      setResMsgStyleinDelete({color:"red",opacity:1,marginTop:"15px",marginBottom:'10px'})
       setTimeout(() => {
-          setResMsgStyleinDelete({opacity:0,marginTop:"0px"})
+          setResMsgStyleinDelete({opacity:0,marginTop:"0px",marginBottom:'0px'})
       },3000);
       setIsFullData(false);
       }else{
         setResMessageinDelete("Something went wrong!");
         console.log(error);
       setTimeout(() => {
-          setResMsgStyleinDelete({opacity:0,marginTop:"0px"})
+          setResMsgStyleinDelete({opacity:0,marginTop:"0px",marginBottom:'0px'})
       },3000);
       setIsFullData(false);
       }
@@ -247,7 +254,7 @@ const uploadReviewPhotos = (e) => {
     setProfileBtnEnable(true);
     try{
     const EmploeeData = new FormData();
-    EmploeeData.append("file",emplyeeProfile);
+    EmploeeData.append("files",emplyeeProfile);
     EmploeeData.append("CloudeId",employeeData?.CloudinaryPublicId);
     const ChangeProfile = await updateProfile(employeeId, EmploeeData);
       if(ChangeProfile.status === 200){
@@ -354,10 +361,9 @@ const uploadReviewPhotos = (e) => {
       
     }
   };
-let cName = localStorage.getItem("CompanyName");
   return (
     <div className='ProductPageMain'>
-        <Link to={`/company/${cName}`} className='arrowback_a'><ArrowBackIcon className='arrowbackIcon'/></Link>
+        <Link to={`/company/${user?.companyName}`} className='arrowback_a'><ArrowBackIcon className='arrowbackIcon'/></Link>
     {/* delete pre popup <>*/}
       <div className='preDeletebtnContainer' style={{display:`${!isOpend ? 'none' : 'block'}`,left:'455px'}}>
     <div className="preDeletePopup">
@@ -402,7 +408,7 @@ let cName = localStorage.getItem("CompanyName");
                 </div>
                 <div className='ConnectonType'>
                     <div className='connectionButton'><EmailOutlinedIcon style={{color:'#ffb100'}}/></div>
-                    <div className='connectionButton'><LiveChats/></div>
+                    <div className='connectionButton'><LiveChats employeeData={employeeData}/></div>
                     {/* <ChatIcon style={{color:'#00fff2de'}}/> */}
                     <div className='connectionButton'><CallIcon style={{color:'#48ff00'}}/></div>
                 </div>
@@ -495,7 +501,6 @@ let cName = localStorage.getItem("CompanyName");
                     <label htmlFor='employeeAccessPassword'>set/update password</label>
                     <input type="text" value={emplyeeAddDataNew?.employeeAccessPassword ?? ""} onChange={(e) => {setEmployeeDataNew({...emplyeeAddDataNew,[e.target.name]:e.target.value})}} placeholder='password...' name="employeeAccessPassword" id="employeeAccessPassword"/>
                     <div className='showErrorOrSuccess' style={resMsgStyleinPass}>{resMessageinPass}</div>
-
                     <button onClick={updateEmployeePassword}>Submit</button>
                   </div>
                 </div>

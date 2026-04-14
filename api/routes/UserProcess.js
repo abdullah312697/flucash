@@ -34,7 +34,8 @@ router.post("/register", async(req,res) => {
 if (err) return res.status(400).json({ message: err.message });
     try{
     const {companyName,industry,companyEmail,companyPassword,rePassword,verifyCode,numberofEmployees} = req.body;
-
+        console.log(req.files);        
+        console.log(req.body);        
         const estr = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if(companyName === "" ||   industry === "" ||   companyEmail === "" ||
@@ -50,15 +51,14 @@ if (err) return res.status(400).json({ message: err.message });
             return res.status(400).json({message:"Password must have (A-Z, a-z, 1-9, @,$,!)"});
         }else if(companyPassword !== rePassword){
             return res.status(400).json({message:"Password not Match!"});
-        }else if (!req.file) {
+        }else if (req.files.length === 0) {
             return res.status(400).json({ message: "Please upload a Company Profile/Logo" });
         }else {
-                  const file = req.file;
+                  const file = req.files[0];
                   const uploadResult = await uploadImage(
                     file.buffer,
                     Date.now().toString(),
                     "CompanyLogo",
-                    file.mimetype
                   );
                         
              const employeePass = encryptCompanyPassword(companyPassword);
@@ -127,19 +127,22 @@ if (err) return res.status(400).json({ message: err.message });
                         const AccessData = {
                             companyName:saveUser.companyName, 
                             companyLogo:saveUser.companyLogo,
+                            isVerify: saveUser.isVerify,
                         };
                         return res.status(200).cookie(
                             "companyId",companyIdEnc,
                             {
-                            path: '/',
                             httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
                             maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
                             }
                         ).cookie(
                         "employeeId",employeeIdEnc,
                             {
-                            path: '/',
                             httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
                             maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
                             }
                         ).json({
@@ -233,6 +236,7 @@ router.post("/verifyCode", async (req, res) => {
       employeeName: employee.YemplyeeName,
       employeeRoal: employee.EmplyeeRoal,
       employeeProfile: employee.EmplyeeProfile,
+      isVerify: company.isVerify,
     };
 
     return res.status(200).json({
@@ -319,6 +323,11 @@ router.get("/vefiryUsersLog", async(req,res) => {
     const decryptedEmployeeId = decryptUserData(employeeId);
 
         const company = await Companies.findById(decryptedCompanyId).select("-companyPassword");
+
+        if(!company){
+            return res.status(400).json({message:"Register your Company please!"});
+        }
+
         if(!company.isVerify){
             return res.status(400).json({message:"Verify your email"});
         }
@@ -339,6 +348,7 @@ router.get("/vefiryUsersLog", async(req,res) => {
           employeeName: employee.YemplyeeName,
           employeeRoal: employee.EmplyeeRoal,
           employeeProfile: employee.EmplyeeProfile,
+          isVerify: company.isVerify,
       }
     // Success
     return res.status(200).json({ message: "Company and employee verified successfully.", AccessData});
@@ -356,7 +366,6 @@ router.post("/useLogin", async (req, res) => {
       return res.status(400).json({ message: "Fields must not be empty!" });
     }
     let employee = await Employee.findOne({ YemplyeeEmail: email });
-
     if (!employee) {
       return res.status(400).json({ message: "Email or password not match!" });
     }
@@ -379,22 +388,22 @@ router.post("/useLogin", async (req, res) => {
           employeeName: employee.YemplyeeName,
           employeeRoal: employee.EmplyeeRoal,
           employeeProfile: employee.EmplyeeProfile,
+          isVerify: EmployeeComData.isVerify,
       }
       return res
         .status(200)
         .cookie("employeeId", encryptedId, {
-          path: "/",
-          secure: true,
-          httpOnly: true,
-          sameSite: "Strict",
-          maxAge: oneYearInSeconds * 1000
+
+                            httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
+                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
         })
         .cookie("companyId", encryptedCompanyId, {
-          path: "/",
-          secure: true,
-          httpOnly: true,
-          sameSite: "Strict",
-          maxAge: oneYearInSeconds * 1000
+                            httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
+                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
         })
         .json({
           message: "Employee login successful!",
@@ -424,16 +433,16 @@ router.post("/king_userLogin", async(req,res) => {
                         const oneYearInSeconds = 365 * 24 * 60 * 60;        
                         return res.status(200)
                             .cookie("king_userId", KingUserEnc, {
-                                httpOnly: true,
-                                secure: true,
-                                sameSite: 'Strict',
-                                maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
+                            httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
+                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
                             })
                             .cookie("accessRule", user.accessRule, {
-                                httpOnly: true,
-                                secure: true,
-                                sameSite: 'Strict',
-                                maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
+                            httpOnly: true,
+                            secure:true,
+                            sameSite: "none", 
+                            maxAge: oneYearInSeconds * 1000 // Convert seconds to milliseconds
                             })
                             .json({kingUser:user, message:"Login Successful!"});                         
                     }

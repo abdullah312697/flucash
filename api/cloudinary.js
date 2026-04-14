@@ -1,34 +1,48 @@
-import { v2 as cloudinary } from 'cloudinary';
-export const uploadImage = async(fileStream, fileName, fname, fileType ) => {
-    const result = await uploadStream(fileStream, fileName, fname, fileType  );
-    return result;
-}
-const uploadStream = (fileStream, name, fname, fileType) => {
-    cloudinary.config({ 
-        cloud_name:process.env.CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_KEY,
-        api_secret:process.env.CLOUDINARY_SECRET,
-        secure:true,
-    });
-    
-    let fulderName = `nothun/${fname}`;
+import { v2 as cloudinary } from "cloudinary";
+import { PassThrough } from "stream";
 
-    // Determine resource_type based on fileType
-    let resourceType = 'auto'; // 'auto' allows Cloudinary to automatically detect the resource type
-    if (fileType.match(/video\/*/)) {
-        resourceType = 'video';
-    } else if (fileType.match(/image\/*/)) {
-        resourceType = 'image';
+cloudinary.config({ secure: true });
+
+export const uploadImage = async (fileStream, fileName, fname, onProgress) => {
+  return await uploadStream(fileStream, fileName, fname, onProgress);
+};
+
+const uploadStream = (fileStream, name, fname, onProgress) => {
+  const folderName = `flucash/${fname}`;
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: folderName,
+        public_id: name,
+        resource_type: "auto",
+        use_filename: false,
+        unique_filename: false,
+        type: "upload",
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+
+    if (!onProgress || !Buffer.isBuffer(fileStream)) {
+      stream.end(fileStream);
+      return;
     }
 
-//wrapping into promise for using modern async/await
-return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream({ folder:fulderName, public_id: name, resource_type: resourceType }, (error, result) => {
-        if (error) {
-            reject(error);
-        } else {
-            resolve(result);
-        }
-    }).end(fileStream)
-});
+    const total = fileStream.length;
+    let uploaded = 0;
+    const pass = new PassThrough();
+
+    pass.on("data", (chunk) => {
+      uploaded += chunk.length;
+      const percent = Math.round((uploaded / total) * 100);
+      onProgress(Math.min(percent, 99));
+    });
+
+    pass.on("error", reject);
+    pass.pipe(stream);
+    pass.end(fileStream);
+  });
 };

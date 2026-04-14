@@ -8,6 +8,8 @@ import View from './View';
 import AddIcon from '@mui/icons-material/Add';
 import avaterProfiel from '../../../images/profile/male.png';
 import { useAuth } from "../../../context/AuthContext";
+import GroupChats from './GroupChats';
+import groupIcon from '../../../images/logo/logo192.png'
 
 const Main = () => {
   const [employeePopup,setEmployeePopup] = useState(false);
@@ -210,7 +212,7 @@ const uploadReviewPhotos = (e) => {
     EmploeeData.append("EmplyeeSellary",emplyeeAddData.EmplyeeSellary);
     EmploeeData.append("EmplyeeJoinDate",emplyeeAddData.EmplyeeJoinDate);
     EmploeeData.append("EmplyeeRoal",emplyeeAddData.EmplyeeRoal);
-    EmploeeData.append("file",emplyeeProfile);
+    EmploeeData.append("files",emplyeeProfile);
     const adEmplyees = await Altaxios.post('/newemplyee/addemplyee',EmploeeData,
       {
         headers: {
@@ -257,6 +259,18 @@ const uploadReviewPhotos = (e) => {
 
   return (
     <div className='MainContainer'>
+      <div className='live_msg_and_salse'>
+        <div className='live_message_main'>
+          <div className='gruopNameAndLogo'>
+            <img src={groupIcon} alt="group logo"/>
+            <h3>Nothun Group</h3>
+            </div>
+          <div className='groupNotificatin_view'>Group Notification</div>
+        </div>
+        <div className='live_salse_main'>
+
+        </div>
+      </div>
       <div className='addEmplyeePopup' style={{top:`${position.y}px`,left:`${position.x}px`,display: employeePopup ? 'block' : 'none'}}  
       onMouseDown={handleMouseDown}>
         <CloseIcon onClick={ToggleEmplyeePopup}/>
@@ -318,7 +332,8 @@ const uploadReviewPhotos = (e) => {
         </div>
         <div className='MainContainerChunk'>
           <div className='employeeTopHeader'>
-            <span>Total Emplyee <strong>(5)</strong></span><button onClick={ToggleEmplyeePopup}>Add Emplyee</button>
+            {currentEmployee?.length > 0 && (<span>Total Emplyee <strong>({currentEmployee?.length - 1})</strong></span>)}
+            <button onClick={ToggleEmplyeePopup}>Add Emplyee</button>
           </div>
           <div className='mainInnerEmployee'>
             <div className='EmployeeHeader'>
@@ -333,17 +348,24 @@ const uploadReviewPhotos = (e) => {
             </div>
             <div className='EmplyeeListContainer'>
               {
-                currentEmployee.length > 0 ? currentEmployee.filter(emp => emp._id !== user?.employeeId).map(Employee => (
-            <ul key={Employee._id}>
-                <li><img src={Employee.EmplyeeProfile ?? avaterProfiel} alt="Employee Profile" width="40px" height="40px" style={{borderRadius:'4px'}}/></li>
-                <li>{Employee.YemplyeeName ?? "Admin"}</li>
-                <li>{Employee.EmplyeeRoal ?? "Admin"}</li>
-                <li>{Employee.activeStatus ? "Active" : "InActive"}</li>
-                <li>{Employee.EmplyeeSellary ?? "0,0000"}</li>
-                <li><Link to={`/theemployee/${Employee._id}`}>View</Link></li>
+                currentEmployee?.length > 0 ? currentEmployee.filter(emp => emp._id !== user?.employeeId).map(Employee => (
+            <ul key={Employee?._id}>
+                <li><img src={Employee?.EmplyeeProfile ?? avaterProfiel} alt="Employee Profile" width="40px" height="40px" style={{borderRadius:'4px'}}/></li>
+                <li>{Employee?.YemplyeeName ?? "Admin"}</li>
+                <li>{Employee?.EmplyeeRoal ?? "Admin"}</li>
+                <li>{Employee?.activeStatus ? "Active" : "InActive"}</li>
+                <li>{Employee?.EmplyeeSellary ?? "0,0000"}</li>
+                <li><Link to={`/theemployee/${Employee?._id}`}>View</Link></li>
               </ul>
                 ))
-                : (<div style={{textAlign:'center',paddingTop:'84px',color:'#ccc'}}>Don't have any employee yet!</div>)
+                : (
+                          <div className='ProductAddInner' style={{cursor:'pointer'}}>            
+                            <div className='PorductAddInnerContainer' onClick={ToggleEmplyeePopup}>
+                              <h4>Add Employee</h4>
+                              <AddIcon/>
+                            </div>
+                          </div>
+                          )
               }
             </div>
           </div>
@@ -392,6 +414,7 @@ const uploadReviewPhotos = (e) => {
                     </div>
         </div>
       </div>
+      <GroupChats/>
     </div>
   );
 };

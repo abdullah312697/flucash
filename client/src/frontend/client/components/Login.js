@@ -71,7 +71,7 @@ function Login() {
       }, 1200);
 
     } catch (error) {
-      const msg = error?.response?.data?.message || "Something went wrong!";
+      const msg = error?.response?.data?.message;
       setResMessage(msg);
       setResMsgStyle({ color: "red", opacity: 1, marginTop: "15px" });
       setTimeout(() => setResMsgStyle({ opacity: 0 }), 2000);

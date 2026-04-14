@@ -1,0 +1,17 @@
+<svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- First check -->
+  <path d="M3 12l6 6L17 6"
+        fill="none"
+        stroke="#0af"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+        
+  <!-- Second check (shifted right for visible gap) -->
+  <path d="M7 12l6 6L21 6"
+        fill="none"
+        stroke="#0af"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>
